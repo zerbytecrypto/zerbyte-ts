@@ -136,7 +136,7 @@
 </div>
 
 <script>
-  // Initialize Supabase Client
+  // Replace these with your exact Supabase credentials from Settings -> API
   const SUPABASE_URL = "https://odvjvyctqaidcexrqmrc.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kdmp2eWN0cWFpZGNleHJxbXJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MTU5ODEsImV4cCI6MjA4MzQ5MTk4MX0.anicfODTH70oAhpniUMI_9KWQL7hie6i9cZHzUJa6hU";
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -147,7 +147,6 @@
   const errorMessage = document.getElementById('error-message');
   const balanceEl = document.getElementById('balance');
   const bankPlaceholder = document.getElementById('bank-placeholder');
-  const addBankBtn = document.getElementById('add-bank-btn');
 
   let userId = null;
   let userBalance = 0;
@@ -155,63 +154,76 @@
 
   // Initialize Session Check
   async function initAuth() {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      alert("User not logged in. Redirecting...");
-      window.location.href = "login.html";
-      return;
-    }
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) throw error;
 
-    userId = session.user.id;
-    await fetchUserInfo();
-    await checkBankAccount();
+      if (!session) {
+        alert("User not logged in. Redirecting...");
+        window.location.href = "login.html";
+        return;
+      }
+
+      userId = session.user.id;
+      await fetchUserInfo();
+      await checkBankAccount();
+    } catch (err) {
+      console.error("Auth init error:", err);
+      alert("Authentication error: " + err.message);
+    }
   }
 
   initAuth();
 
   async function fetchUserInfo() {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('balance')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('balance')
+        .eq('id', userId)
+        .single();
 
-    if (error) {
-      console.error("Error fetching balance:", error);
-      return;
-    }
+      if (error) throw error;
 
-    if (data) {
-      userBalance = data.balance || 0;
-      balanceEl.textContent = userBalance;
+      if (data) {
+        userBalance = data.balance || 0;
+        balanceEl.textContent = userBalance;
+      }
+    } catch (err) {
+      console.error("Fetch profile error:", err);
     }
   }
 
   async function checkBankAccount() {
-    const { data, error } = await supabase
-      .from('bank_accounts')
-      .select('bank_name, cbu')
-      .eq('user_id', userId)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from('bank_accounts')
+        .select('bank_name, cbu')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-    if (error) {
-      console.error("Error fetching bank info:", error);
-      return;
-    }
+      if (error) throw error;
 
-    if (data) {
-      bankPlaceholder.innerHTML = `
-        <div class="bank-info">
-          <div>
-            <div>${data.bank_name.toUpperCase()}</div>
-            <div>XXXXXX${data.cbu.slice(-4)}</div>
+      if (data) {
+        bankPlaceholder.innerHTML = `
+          <div class="bank-info">
+            <div>
+              <div>${data.bank_name.toUpperCase()}</div>
+              <div>XXXXXX${data.cbu.slice(-4)}</div>
+            </div>
+            <input type="radio" checked />
           </div>
-          <input type="radio" checked />
-        </div>
-      `;
-      bankAdded = true;
-      validateAmount();
+        `;
+        bankAdded = true;
+        validateAmount();
+      } else {
+        // Render default add bank button if no bank found
+        bankPlaceholder.innerHTML = `<button id="add-bank-btn" class="add-bank-btn">Add Bank Account</button>`;
+        attachAddBankListener();
+      }
+    } catch (err) {
+      console.error("Check bank account error:", err);
     }
   }
 
@@ -230,12 +242,15 @@
 
   amountInput.addEventListener('input', validateAmount);
 
+  // WITHDRAW BUTTON HANDLER
   withdrawBtn.addEventListener('click', async () => {
     const amount = parseFloat(amountInput.value);
-    if (!withdrawBtn.classList.contains('active') || isNaN(amount)) return;
+    if (withdrawBtn.disabled || isNaN(amount)) return;
 
     try {
-      // 1. Insert transaction into existing transactions table
+      withdrawBtn.disabled = true;
+
+      // 1. Insert transaction
       const { error: insertError } = await supabase
         .from('transactions')
         .insert({
@@ -248,7 +263,7 @@
 
       if (insertError) throw insertError;
 
-      // 2. Atomic balance update in profiles table using RPC function
+      // 2. Call RPC to deduct balance
       const { error: rpcError } = await supabase
         .rpc('deduct_user_balance', {
           p_user_id: userId,
@@ -257,85 +272,95 @@
 
       if (rpcError) throw rpcError;
 
-      alert("Withdrawal initiated!");
-      setTimeout(() => window.location.href = "dashboard.html", 2000);
+      alert("Withdrawal initiated successfully!");
+      window.location.href = "dashboard.html";
     } catch (error) {
       console.error("Withdrawal error:", error);
-      alert("Error processing withdrawal.");
+      alert("Withdrawal failed: " + (error.message || error));
+      withdrawBtn.disabled = false;
     }
   });
 
-  addBankBtn.addEventListener('click', () => {
-    bankPlaceholder.innerHTML = `
-      <div class="add-bank-form">
-        <input type="text" id="firstName" placeholder="Name" />
-        <input type="text" id="cbu" placeholder="CBU" />
-        <input type="text" id="bankName" placeholder="Bank Name" />
-        <input type="text" id="mobile" placeholder="Mobile Number" />
-        <button id="confirm-btn" class="confirm-btn" disabled>Confirm</button>
-      </div>
-    `;
+  // ADD BANK BUTTON HANDLER
+  function attachAddBankListener() {
+    const addBankBtn = document.getElementById('add-bank-btn');
+    if (!addBankBtn) return;
 
-    const inputs = ['firstName', 'cbu', 'bankName', 'mobile'].map(id => document.getElementById(id));
-    const confirmBtn = document.getElementById('confirm-btn');
-
-    const validateForm = () => {
-      const allFilled = inputs.every(input => input.value.trim() !== '');
-      confirmBtn.disabled = !allFilled;
-      confirmBtn.classList.toggle('active', allFilled);
-    };
-
-    inputs.forEach(input => input.addEventListener('input', validateForm));
-
-    confirmBtn.addEventListener('click', async () => {
-      if (!confirmBtn.classList.contains('active')) return;
-
-      const code = prompt("Enter admin authorization code:");
-      
-      const { data: codeData, error: codeError } = await supabase
-        .from('settings')
-        .select('value')
-        .eq('key', 'auth_code')
-        .maybeSingle();
-
-      if (codeError || !codeData || code !== codeData.value) {
-        alert("Invalid authorization code.");
-        return;
-      }
-
-      const bankDetails = {
-        user_id: userId,
-        first_name: inputs[0].value,
-        cbu: inputs[1].value,
-        bank_name: inputs[2].value,
-        mobile: inputs[3].value
-      };
-
-      const { error: upsertError } = await supabase
-        .from('bank_accounts')
-        .upsert(bankDetails, { onConflict: 'user_id' });
-
-      if (upsertError) {
-        console.error("Error saving bank details:", upsertError);
-        alert("Failed to save bank details.");
-        return;
-      }
-
+    addBankBtn.addEventListener('click', () => {
       bankPlaceholder.innerHTML = `
-        <div class="bank-info">
-          <div>
-            <div>${bankDetails.bank_name.toUpperCase()}</div>
-            <div>XXXXXX${bankDetails.cbu.slice(-4)}</div>
-          </div>
-          <input type="radio" checked />
+        <div class="add-bank-form">
+          <input type="text" id="firstName" placeholder="Name" />
+          <input type="text" id="cbu" placeholder="CBU" />
+          <input type="text" id="bankName" placeholder="Bank Name" />
+          <input type="text" id="mobile" placeholder="Mobile Number" />
+          <button id="confirm-btn" class="confirm-btn" disabled>Confirm</button>
         </div>
       `;
 
-      bankAdded = true;
-      validateAmount();
-      alert("Bank account added successfully!");
+      const inputs = ['firstName', 'cbu', 'bankName', 'mobile'].map(id => document.getElementById(id));
+      const confirmBtn = document.getElementById('confirm-btn');
+
+      const validateForm = () => {
+        const allFilled = inputs.every(input => input.value && input.value.trim() !== '');
+        confirmBtn.disabled = !allFilled;
+        confirmBtn.classList.toggle('active', !confirmBtn.disabled);
+      };
+
+      inputs.forEach(input => input.addEventListener('input', validateForm));
+
+      confirmBtn.addEventListener('click', async () => {
+        if (confirmBtn.disabled) return;
+
+        try {
+          const code = prompt("Enter admin authorization code:");
+          
+          const { data: codeData, error: codeError } = await supabase
+            .from('settings')
+            .select('value')
+            .eq('key', 'auth_code')
+            .maybeSingle();
+
+          if (codeError) throw codeError;
+
+          if (!codeData || code !== codeData.value) {
+            alert("Invalid authorization code.");
+            return;
+          }
+
+          const bankDetails = {
+            user_id: userId,
+            first_name: inputs[0].value,
+            cbu: inputs[1].value,
+            bank_name: inputs[2].value,
+            mobile: inputs[3].value
+          };
+
+          const { error: upsertError } = await supabase
+            .from('bank_accounts')
+            .upsert(bankDetails, { onConflict: 'user_id' });
+
+          if (upsertError) throw upsertError;
+
+          bankPlaceholder.innerHTML = `
+            <div class="bank-info">
+              <div>
+                <div>${bankDetails.bank_name.toUpperCase()}</div>
+                <div>XXXXXX${bankDetails.cbu.slice(-4)}</div>
+              </div>
+              <input type="radio" checked />
+            </div>
+          `;
+
+          bankAdded = true;
+          validateAmount();
+          alert("Bank account added successfully!");
+        } catch (err) {
+          console.error("Save bank error:", err);
+          alert("Error saving bank account: " + err.message);
+        }
+      });
     });
-  });
+  }
 </script>
 
 </body>
