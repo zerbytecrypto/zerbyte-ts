@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Zerbyte â€“ Crypto Exchange</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="style.css?v=1.0.4">
+   <style>
+    /* Custom Scrollbar for the dark theme */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #0b0e11;
+}
+::-webkit-scrollbar-thumb {
+    background: #1e2329;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #00d084;
+}
+
+/* Tab transition animation */
+#btn-buy, #btn-sell, #btn-convert {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Input glow effect */
+input:focus {
+    box-shadow: 0 0 0 2px rgba(0, 208, 132, 0.1);
+}
+    </style>
+</head>
+<body>
+<body class="bg-[#0b0e11] text-white font-sans">
+
+    <nav class="flex items-center justify-between px-6 py-4 border-b border-gray-800 sticky top-0 bg-[#0b0e11] z-50">
+        <div class="flex items-center gap-2">
+            <div class="bg-[#00d084] p-1.5 rounded-lg text-black font-bold text-xl">Z</div>
+            <span class="text-xl font-bold tracking-tight">Zerbyte</span>
+        </div>
+        <i class="fa-solid fa-bars text-2xl cursor-pointer"></i>
+    </nav>
+<div id="mobile-menu" class="fixed inset-0 bg-[#0b0e11] z-[60] flex flex-col p-6 translate-x-full transition-transform duration-300 ease-in-out">
+    <div class="flex justify-between items-center mb-12">
+        <div class="flex items-center gap-2">
+            <div class="bg-[#00d084] p-1.5 rounded-lg text-black font-bold text-xl">Z</div>
+            <span class="text-xl font-bold tracking-tight">Zerbyte</span>
+        </div>
+        <i id="menu-close" class="fa-solid fa-xmark text-3xl cursor-pointer text-gray-400 hover:text-white"></i>
+    </div>
+
+    <ul class="space-y-8 text-2xl font-medium">
+        <li><a href="#market-overview" class="hover:text-[#00d084] transition">Markets</a></li>
+        <li><a href="auth.html" class="hover:text-[#00d084] transition">Trade</a></li>
+        <li><a href="#portfolio-overview" class="hover:text-[#00d084] transition">Portfolio</a></li>
+        <li><a href="auth.html" class="hover:text-[#00d084] transition">Earn</a></li>
+    </ul>
+
+    <div class="mt-auto space-y-4">
+        <button 
+onclick="window.location.href='auth.html'"
+			class="w-full bg-[#1e2329] py-4 rounded-xl font-bold">Log In</button>
+			
+        <button 
+onclick="window.location.href='auth.html'"
+class="w-full bg-[#00d084] text-black py-4 rounded-xl font-bold">Sign Up</button>
+    </div>
+</div>
+
+    <div class="bg-[#0b0e11] border-b border-gray-800 py-2 overflow-hidden whitespace-nowrap text-sm">
+        <div class="flex gap-8 animate-pulse px-6">
+        <span>
+  BTC
+  <span id="ticker-btc-price" class="text-gray-400">$â€”</span>
+  <span id="ticker-btc-change"></span>
+</span>
+
+<span>
+  ETH
+  <span id="ticker-eth-price" class="text-gray-400">$â€”</span>
+  <span id="ticker-eth-change"></span>
+</span>
+
+<span>
+  SOL
+  <span id="ticker-sol-price" class="text-gray-400">$â€”</span>
+  <span id="ticker-sol-change"></span>
+</span>
+        </div>
+    </div>
+
+    <section class="px-6 py-16 text-center lg:text-left lg:max-w-4xl lg:mx-auto">
+        <div class="inline-flex items-center gap-2 bg-[#162a22] text-[#00d084] px-3 py-1 rounded-full text-xs font-medium mb-6">
+            <span class="w-2 h-2 bg-[#00d084] rounded-full"></span> Live Trading Available
+        </div>
+        <h1 class="text-5xl font-bold leading-tight mb-6">
+            Trade Crypto <br>with <span class="text-[#00d084]">Confidence</span>
+        </h1>
+        <p class="text-gray-400 text-lg mb-8 leading-relaxed">
+            Join millions of traders worldwide. Buy, sell, and trade 200+ cryptocurrencies with industry-leading security and the lowest fees.
+        </p>
+       <a
+  href="auth.html"
+  class="bg-[#00d084] text-black font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-green-400 transition"
+>
+  Get Started <i class="fa-solid fa-arrow-right"></i>
+</a>
+
+<div class="flex flex-wrap justify-center lg:justify-start gap-6 mt-10 text-sm text-gray-400">
+            <span><i class="fa-solid fa-shield-halved text-[#00d084] mr-2"></i>Bank-grade security</span>
+            <span><i class="fa-solid fa-bolt text-[#00d084] mr-2"></i>Instant execution</span>
+            <span><i class="fa-solid fa-globe text-[#00d084] mr-2"></i>180+ countries</span>
+        </div>
+    </section>
+
+    <section class="grid grid-cols-2 gap-y-12 py-12 px-6 bg-black/20">
+        <div class="text-center">
+            <div class="text-[#00d084] text-2xl font-bold">$48B+</div>
+            <div class="text-gray-500 text-xs mt-1">Trading Volume (24h)</div>
+        </div>
+        <div class="text-center">
+            <div class="text-[#00d084] text-2xl font-bold">10M+</div>
+            <div class="text-gray-500 text-xs mt-1">Registered Users</div>
+        </div>
+        <div class="text-center">
+            <div class="text-[#00d084] text-2xl font-bold">180+</div>
+            <div class="text-gray-500 text-xs mt-1">Countries Supported</div>
+        </div>
+        <div class="text-center">
+            <div class="text-[#00d084] text-2xl font-bold">99.99%</div>
+            <div class="text-gray-500 text-xs mt-1">Platform Uptime</div>
+        </div>
+    </section>
+
+<section id="portfolio-overview" class="px-6 py-12">
+    <div class="bg-[#161a1e] border border-gray-800 rounded-3xl p-6">
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <p class="text-gray-500 text-sm">Portfolio Value</p>
+                <h2 class="text-3xl font-bold mt-1 text-white">$48,392.54</h2>
+            </div>
+            <div class="text-[#00d084] font-medium bg-[#162a22] px-2 py-1 rounded-lg text-sm">
+                +12.4% today
+            </div>
+        </div>
+
+        <div class="h-40 w-full mb-8">
+            <canvas id="portfolioChart"></canvas>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+            <div class="bg-[#0b0e11] p-4 rounded-2xl border border-gray-800">
+                <p class="text-gray-500 text-[10px] uppercase font-bold mb-1">BTC</p>
+                <p class="text-white font-bold">0.892</p>
+            </div>
+            <div class="bg-[#0b0e11] p-4 rounded-2xl border border-gray-800">
+                <p class="text-gray-500 text-[10px] uppercase font-bold mb-1">ETH</p>
+                <p class="text-white font-bold">4.215</p>
+            </div>
+            <div class="bg-[#0b0e11] p-4 rounded-2xl border border-gray-800">
+                <p class="text-gray-500 text-[10px] uppercase font-bold mb-1">SOL</p>
+                <p class="text-white font-bold">52.3</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+   <section id="market-overview" class="px-6 py-12">
+    <h2 class="text-2xl font-bold mb-2">Market Overview</h2>
+    <p class="text-gray-500 text-sm mb-6">Real-time prices for popular cryptocurrencies</p>
+
+    <div class="relative mb-6">
+        <i class="fa-solid fa-magnifying-glass absolute left-4 top-4 text-gray-500"></i>
+        <input type="text" placeholder="Search..."
+               class="w-full bg-[#1e2329] border border-gray-800 rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-[#00d084]">
+    </div>
+
+    <div class="space-y-4" id="market-list"></div>
+</section>
+
+    <section class="px-6 py-12 bg-[#0b0e11]">
+        <h2 class="text-3xl font-bold text-center mb-2">Why Choose Zerbyte</h2>
+        <p class="text-gray-500 text-center mb-10">Built by traders, for traders. We provide the tools and security you need to succeed.</p>
+        
+        <div class="space-y-4">
+            <div class="bg-[#161a1e] p-6 rounded-2xl border border-gray-800">
+                <div class="bg-[#1c2e27] w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-shield text-[#00d084] text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Bank-Grade Security</h3>
+                <p class="text-gray-400 leading-relaxed">Your assets are protected by industry-leading security protocols and insurance coverage.</p>
+            </div>
+           
+
+  <div class="space-y-4">
+            <div class="bg-[#161a1e] p-6 rounded-2xl border border-gray-800">
+                <div class="bg-[#1c2e27] w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+                    <i class="fa-regular fa-bolt text-[#00d084] text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Lightning Fast</h3>
+                <p class="text-gray-400 leading-relaxed">Execute trades in milliseconds with our high-performance matching engine.</p>
+            </div>
+            
+  <div class="space-y-4">
+            <div class="bg-[#161a1e] p-6 rounded-2xl border border-gray-800">
+                <div class="bg-[#1c2e27] w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+                    <i class="fa-regular fa-lock text-[#00d084] text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Cold Storage</h3>
+                <p class="text-gray-400 leading-relaxed">95% of all assets are stored offline in geographically distributed cold wallets.</p>
+            </div>
+
+  <div class="space-y-4">
+            <div class="bg-[#161a1e] p-6 rounded-2xl border border-gray-800">
+                <div class="bg-[#1c2e27] w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+                    <i class="fa-regular fa-headphones text-[#00d084] text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">24/7 Support</h3>
+                <p class="text-gray-400 leading-relaxed">Our expert support team is available around the clock to help you.</p>
+            </div>
+
+    </section>
+      
+    <footer class="bg-[#0b0e11] px-6 py-12 border-t border-gray-800">
+        <div class="mb-8">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="bg-[#00d084] p-1 rounded-md text-black font-bold">Z</div>
+                <span class="font-bold text-lg">Zerbyte</span>
+            </div>
+            <p class="text-gray-500 text-sm">The most trusted cryptocurrency exchange for beginners and pros.</p>
+            <div class="flex gap-4 mt-4 text-gray-400">
+                <i class="fa-brands fa-twitter cursor-pointer"></i>
+                <i class="fa-brands fa-discord cursor-pointer"></i>
+                <i class="fa-brands fa-telegram cursor-pointer"></i>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-8 text-sm">
+            <div class="space-y-3">
+                <h4 class="font-bold">Products</h4>
+                <p class="text-gray-500">Spot Trading</p>
+                <p class="text-gray-500">Earn</p>
+            </div>
+            <div class="space-y-3">
+                <h4 class="font-bold">Support</h4>
+                <p class="text-gray-500">Help Center</p>
+                <p class="text-gray-500">Fees</p>
+            </div>
+        </div>
+        
+        <div class="mt-12 pt-8 border-t border-gray-900 text-center text-xs text-gray-600">
+            <p>Â© 2025 Zerbyte. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+
+</body>
+</html>

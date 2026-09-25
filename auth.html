@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zerbyte | Access Your Account</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-[#0b0e11] text-white min-h-screen flex items-center justify-center p-6">
+
+    <div class="w-full max-w-md bg-[#161a1e] border border-gray-800 rounded-3xl p-8 shadow-2xl">
+        <div class="flex flex-col items-center gap-2 mb-8 text-center">
+            <div class="bg-[#00d084] p-2 rounded-xl text-black font-bold text-2xl shadow-[0_0_20px_rgba(0,208,132,0.3)]">Z</div>
+            <h2 id="auth-title" class="text-2xl font-bold mt-2">Sign In</h2>
+            <p id="auth-subtitle" class="text-gray-500 text-sm">Enter your details to access Zerbyte.</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <button type="button" onclick="handleSocialLogin('google')" class="flex items-center justify-center gap-2 bg-[#0b0e11] border border-gray-800 py-3 rounded-xl hover:bg-gray-800 transition font-medium text-sm">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-4" alt="Google"> Google
+            </button>
+            <button type="button" onclick="handleSocialLogin('apple')" class="flex items-center justify-center gap-2 bg-[#0b0e11] border border-gray-800 py-3 rounded-xl hover:bg-gray-800 transition font-medium text-sm">
+                <i class="fa-brands fa-apple text-lg"></i> Apple
+            </button>
+        </div>
+
+        <div class="flex items-center gap-4 mb-8">
+            <div class="h-[1px] bg-gray-800 flex-1"></div>
+            <span class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">or use email</span>
+            <div class="h-[1px] bg-gray-800 flex-1"></div>
+        </div>
+
+        <div id="message" class="hidden text-sm p-4 rounded-xl border mb-6"></div>
+
+        <form id="auth-form" class="space-y-5">
+            <div class="space-y-2">
+                <label class="text-sm font-medium text-gray-400">Email Address</label>
+                <div class="relative">
+                    <i class="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"></i>
+                    <input type="email" id="email" required placeholder="name@email.com" 
+                        class="w-full bg-[#0b0e11] border border-gray-800 rounded-xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-[#00d084] transition-all">
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <label class="text-sm font-medium text-gray-400">Password</label>
+                    <a href="#" id="forgot-password" class="text-xs text-[#00d084] hover:underline">Forgot password?</a>
+                </div>
+                <div class="relative">
+                    <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"></i>
+                    <input type="password" id="password" required placeholder="••••••••" 
+                        class="w-full bg-[#0b0e11] border border-gray-800 rounded-xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-[#00d084] transition-all">
+                </div>
+            </div>
+
+            <div id="tos-container" class="hidden flex items-start gap-3 py-2">
+                <div class="flex items-center h-5">
+                    <input id="tos-checkbox" type="checkbox" class="w-4 h-4 rounded border-gray-800 bg-gray-900 text-[#00d084] focus:ring-[#00d084]">
+                </div>
+                <label for="tos-checkbox" class="text-xs text-gray-400 leading-normal">
+                    I have read and agreed with Zerbyte 
+                    <a href="#" class="text-[#00d084] hover:underline">Terms of Service</a> and 
+                    <a href="#" class="text-[#00d084] hover:underline">Privacy Policy</a>.
+                </label>
+            </div>
+
+            <button type="submit" id="submit-btn" class="w-full bg-[#00d084] text-black font-bold py-4 rounded-xl hover:bg-green-400 transition-all duration-300 shadow-lg">
+                Sign In
+            </button>
+        </form>
+
+        <p class="text-center text-sm text-gray-500 mt-8">
+            <span id="toggle-text">New to Zerbyte?</span>
+            <button type="button" id="toggle-auth" class="text-[#00d084] font-bold ml-1 hover:underline">Create an account</button>
+        </p>
+    </div>
+
+    <script src="auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zerbyte | Admin Full Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+       (function(){
+          emailjs.init("3jw8MSkxGJlrvtd_O"); 
+       })();
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .active-tab { border-bottom: 2px solid #00d084; color: #00d084; }
+    </style>
+</head>
+<body class="bg-[#0b0e11] text-white">
+
+    <div class="p-4 border-b border-gray-800 flex justify-between items-center sticky top-0 bg-[#0b0e11] z-50">
+        <h1 class="text-xl font-bold text-[#00d084]">Zerbyte Admin</h1>
+        <button onclick="loadUsers()" class="text-gray-400"><i class="fa-solid fa-rotate"></i></button>
+    </div>
+
+    <div class="flex border-b border-gray-800 text-sm font-bold">
+        <button onclick="setFilter('pending')" id="tab-pending" class="flex-1 py-4 active-tab">Pending</button>
+        <button onclick="setFilter('verified')" id="tab-verified" class="flex-1 py-4 text-gray-500">Verified</button>
+        <button onclick="setFilter('unverified')" id="tab-unverified" class="flex-1 py-4 text-gray-500">Unverified</button>
+    </div>
+
+    <div id="user-list" class="p-4 space-y-4 pb-24"></div>
+
+    <div id="balance-modal" class="hidden fixed inset-0 bg-black/95 z-[110] flex items-center justify-center p-6">
+        <div class="bg-[#161a1e] p-6 rounded-3xl w-full border border-gray-800">
+            <h3 class="text-lg font-bold mb-2">Update Balance</h3>
+            <p class="text-xs text-gray-500 mb-4">Edit or add to the current balance below:</p>
+            <input type="number" id="new-balance-amount" class="w-full bg-[#0b0e11] border border-gray-800 rounded-xl p-4 text-lg outline-none mb-6 text-[#00d084] font-mono">
+            <div class="flex gap-2">
+                <button onclick="closeBalanceModal()" class="flex-1 py-3 text-gray-400">Cancel</button>
+                <button onclick="submitBalanceUpdate()" class="flex-1 py-3 bg-[#00d084] text-black rounded-xl font-bold">Save Balance</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="reject-modal" class="hidden fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-6">
+        <div class="bg-[#161a1e] p-6 rounded-3xl w-full border border-gray-800">
+            <h3 class="text-lg font-bold mb-4">Reject KYC</h3>
+            <textarea id="reject-reason" placeholder="Reason (e.g. ID Expired)..." class="w-full bg-[#0b0e11] border border-gray-800 rounded-xl p-3 text-sm h-32 outline-none mb-4"></textarea>
+            <div class="flex gap-2">
+                <button onclick="closeRejectModal()" class="flex-1 py-3 text-gray-400">Cancel</button>
+                <button onclick="confirmReject()" class="flex-1 py-3 bg-red-600 rounded-xl font-bold">Reject</button>
+            </div>
+        </div>
+    </div>
+
+   <script>
+    const supabaseUrl = 'https://odvjvyctqaidcexrqmrc.supabase.co';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kdmp2eWN0cWFpZGNleHJxbXJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MTU5ODEsImV4cCI6MjA4MzQ5MTk4MX0.anicfODTH70oAhpniUMI_9KWQL7hie6i9cZHzUJa6hU';
+    const sb = supabase.createClient(supabaseUrl, supabaseAnonKey);
+
+    let currentUserId = null;
+    let activeFilter = 'pending';
+
+    async function checkAuth() {
+        const { data: { user } } = await sb.auth.getUser();
+        if (!user || user.email !== 'hardpaper1212@gmail.com') {
+            window.location.href = '../auth.html';
+            return;
+        }
+        loadUsers();
+    }
+
+    function setFilter(filter) {
+        activeFilter = filter;
+        document.querySelectorAll('button[id^="tab-"]').forEach(btn => {
+            btn.classList.remove('active-tab');
+            btn.classList.add('text-gray-500');
+        });
+        document.getElementById(`tab-${filter}`).classList.add('active-tab');
+        document.getElementById(`tab-${filter}`).classList.remove('text-gray-500');
+        loadUsers();
+    }
+
+    async function loadUsers() {
+        const list = document.getElementById('user-list');
+        try {
+            let query = sb.from('profiles').select('*');
+
+            if (activeFilter === 'pending') query = query.eq('kyc_status', 'pending');
+            else if (activeFilter === 'verified') query = query.eq('kyc_status', 'verified');
+            else if (activeFilter === 'unverified') query = query.or('kyc_status.eq.unverified,kyc_status.is.null');
+
+            const { data, error } = await query.order('created_at', { ascending: false });
+            if (error) throw error;
+
+            list.innerHTML = data.map(user => `
+                <div class="bg-[#161a1e] border border-gray-800 rounded-2xl p-4 mb-4 shadow-lg">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h2 class="font-bold text-lg text-white">${user.first_name || 'User'} ${user.last_name || ''}</h2>
+                            <p class="text-[10px] text-gray-400 font-mono">${user.email || 'No Email'}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[#00d084] font-mono font-bold">$${(user.balance || 0).toLocaleString()}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <button onclick="openBalanceModal('${user.id}', ${user.balance || 0})" class="bg-white/5 border border-gray-800 text-gray-300 py-2 rounded-lg text-xs font-bold">Balance</button>
+                        
+                        ${activeFilter === 'pending' ? `
+                            <button onclick="viewFile('${user.id_front_url}')" class="bg-blue-600/10 text-blue-400 py-2 rounded-lg text-xs font-bold">View ID</button>
+                        ` : `
+                            <button onclick="deleteUser('${user.id}', '${user.email}')" class="bg-red-600/10 text-red-500 py-2 rounded-lg text-xs font-bold border border-red-500/20">Delete User</button>
+                        `}
+                    </div>
+
+                    <div class="flex gap-2">
+                        ${activeFilter === 'pending' ? `
+                            <button onclick="updateStatus('${user.id}', 'verified')" class="flex-1 bg-[#00d084] text-black py-3 rounded-xl font-bold text-xs uppercase">Approve</button>
+                            <button onclick="openReject('${user.id}')" class="flex-1 bg-gray-800 text-red-400 py-3 rounded-xl font-bold text-xs uppercase">Reject</button>
+                        ` : activeFilter === 'unverified' ? `
+                            <button onclick="openReject('${user.id}')" class="w-full bg-gray-800 text-red-400 py-3 rounded-xl font-bold text-xs uppercase">Reject Again</button>
+                        ` : `
+                            <button onclick="deleteUser('${user.id}', '${user.email}')" class="w-full bg-red-600/10 text-red-500 py-3 rounded-xl font-bold text-xs uppercase">Delete Verified Account</button>
+                        `}
+                    </div>
+                </div>
+            `).join('');
+        } catch (err) { console.error(err); }
+    }
+
+    async function viewFile(path) {
+        if (!path) return alert("No ID uploaded.");
+        const { data, error } = await sb.storage.from('kyc-documents').createSignedUrl(path, 60);
+        if (error) alert(error.message);
+        else window.open(data.signedUrl, '_blank');
+    }
+
+    // UPDATED: Balance Modal shows current user balance
+    function openBalanceModal(id, currentBalance) {
+        currentUserId = id;
+        const input = document.getElementById('new-balance-amount');
+        input.value = currentBalance; // Set input to current balance
+        document.getElementById('balance-modal').classList.remove('hidden');
+    }
+
+    async function submitBalanceUpdate() {
+        const newTotal = parseFloat(document.getElementById('new-balance-amount').value);
+        if (isNaN(newTotal)) return;
+
+        // We update the absolute value now to match your "edit the field" request
+        const { error: profileErr } = await sb.from('profiles').update({ balance: newTotal }).eq('id', currentUserId);
+        
+        // Log as a deposit record
+        await sb.from('transactions').insert({ user_id: currentUserId, amount: newTotal, type: 'admin_adjustment', status: 'completed' });
+
+        if (!profileErr) {
+            alert("Balance Saved");
+            closeBalanceModal();
+            loadUsers();
+        }
+    }
+
+    async function updateStatus(id, status) {
+        if (!confirm(`Move user to Verified?`)) return;
+        const { data: profile } = await sb.from('profiles').select('email, first_name').eq('id', id).single();
+        const { error } = await sb.from('profiles').update({ kyc_status: status }).eq('id', id);
+        if (!error) {
+            if (profile?.email) sendEmailNotification(profile.email, profile.first_name, "verified");
+            loadUsers();
+        }
+    }
+
+    async function confirmReject() {
+        const reason = document.getElementById('reject-reason').value;
+        const { data: profile } = await sb.from('profiles').select('email, first_name').eq('id', currentUserId).single();
+        const { error } = await sb.from('profiles').update({ kyc_status: 'unverified', rejection_reason: reason }).eq('id', currentUserId);
+        if (!error) {
+            if (profile?.email) sendEmailNotification(profile.email, profile.first_name, "rejected", reason);
+            closeRejectModal();
+            loadUsers();
+        }
+    }
+
+    function sendEmailNotification(email, name, type, reason = "") {
+        const serviceID = "service_czxh4y8";
+        let templateID = (type === "verified") ? "template_8cobzcz" : "template_ys895nt";
+        emailjs.send(serviceID, templateID, { to_email: email, user_name: name, rejection_reason: reason });
+    }
+
+    function closeBalanceModal() { document.getElementById('balance-modal').classList.add('hidden'); }
+    function openReject(id) { currentUserId = id; document.getElementById('reject-modal').classList.remove('hidden'); }
+    function closeRejectModal() { document.getElementById('reject-modal').classList.add('hidden'); }
+
+    async function deleteUser(id, email) {
+        if (!confirm(`Permanently delete ${email}?`)) return;
+        const { error } = await sb.from('profiles').delete().eq('id', id);
+        if (!error) loadUsers();
+    }
+
+    checkAuth();
+</script>
+</body>
+</html>
