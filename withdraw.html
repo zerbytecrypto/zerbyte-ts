@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Withdraw</title>
+
+  <!-- Supabase JS Client Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #0b0e11;
+      color: #FFFFFF;
+    }
+
+    .header {
+      background-color: #0b0e11;
+      color: #fff;
+      padding: 16px;
+      font-size: 18px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    .card {
+      background-color: #091DFC;
+      padding: 8px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .withdraw-section {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .withdraw-section input {
+      font-size: 28px;
+      text-align: center;
+      border: none;
+      border-bottom: 1px solid #ccc;
+      width: 100px;
+      outline: none;
+    }
+
+    .bank-info, .add-bank-form {
+      margin-top: 30px;
+      padding: 15px;
+      border: 1px solid #eee;
+      border-radius: 10px;
+    }
+
+    .bank-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .add-bank-form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .add-bank-form input {
+      width: 90%;
+      margin: 8px 0;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .error {
+      color: red;
+      font-size: 14px;
+      margin-top: 10px;
+      text-align: center;
+      display: none;
+    }
+
+    .withdraw-btn, .confirm-btn, .add-bank-btn {
+      margin-top: 30px;
+      padding: 15px;
+      width: 100%;
+      border: none;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      background-color: #00d084;
+      color: #162a22;
+      cursor: not-allowed;
+    }
+
+    .withdraw-btn.active, .confirm-btn.active {
+      background-color: #00d084;
+      color: #162a22;
+      cursor: pointer;
+    }
+
+    .add-bank-btn {
+      background-color: #00d084;
+      color: #162a22;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">Add Withdraw Account</div>
+
+<div class="container">
+  <div class="card">
+    <p><strong>$<span id="balance">0.00</span></strong></p>
+    <h3>Available Balance</h3>
+  </div>
+
+  <div class="withdraw-section">
+    <span style="font-size: 24px;">$</span>
+    <input type="number" id="amount" min="0" />
+    <h4>Withdraw Amount</h4>
+  </div>
+
+  <div id="bank-placeholder">
+    <button id="add-bank-btn" class="add-bank-btn">Add Bank Account</button>
+  </div>
+
+  <div id="error-message" class="error">Amount must not exceed your balance</div>
+  <button id="withdraw-btn" class="withdraw-btn" disabled>WITHDRAW</button>
+</div>
+
+<script>
+  // Initialize Supabase Client
+  const SUPABASE_URL = "https://odvjvyctqaidcexrqmrc.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kdmp2eWN0cWFpZGNleHJxbXJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MTU5ODEsImV4cCI6MjA4MzQ5MTk4MX0.anicfODTH70oAhpniUMI_9KWQL7hie6i9cZHzUJa6hU";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // UI Elements
+  const amountInput = document.getElementById('amount');
+  const withdrawBtn = document.getElementById('withdraw-btn');
+  const errorMessage = document.getElementById('error-message');
+  const balanceEl = document.getElementById('balance');
+  const bankPlaceholder = document.getElementById('bank-placeholder');
+  const addBankBtn = document.getElementById('add-bank-btn');
+
+  let userId = null;
+  let userBalance = 0;
+  let bankAdded = false;
+
+  // Initialize Session Check
+  async function initAuth() {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      alert("User not logged in. Redirecting...");
+      window.location.href = "login.html";
+      return;
+    }
+
+    userId = session.user.id;
+    await fetchUserInfo();
+    await checkBankAccount();
+  }
+
+  initAuth();
+
+  async function fetchUserInfo() {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('balance')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error("Error fetching balance:", error);
+      return;
+    }
+
+    if (data) {
+      userBalance = data.balance || 0;
+      balanceEl.textContent = userBalance;
+    }
+  }
+
+  async function checkBankAccount() {
+    const { data, error } = await supabase
+      .from('bank_accounts')
+      .select('bank_name, cbu')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error fetching bank info:", error);
+      return;
+    }
+
+    if (data) {
+      bankPlaceholder.innerHTML = `
+        <div class="bank-info">
+          <div>
+            <div>${data.bank_name.toUpperCase()}</div>
+            <div>XXXXXX${data.cbu.slice(-4)}</div>
+          </div>
+          <input type="radio" checked />
+        </div>
+      `;
+      bankAdded = true;
+      validateAmount();
+    }
+  }
+
+  function validateAmount() {
+    const amount = parseFloat(amountInput.value);
+    if (!bankAdded || isNaN(amount) || amount <= 0 || amount > userBalance) {
+      withdrawBtn.classList.remove('active');
+      withdrawBtn.disabled = true;
+      errorMessage.style.display = (amount > userBalance || amount <= 0) ? 'block' : 'none';
+    } else {
+      withdrawBtn.classList.add('active');
+      withdrawBtn.disabled = false;
+      errorMessage.style.display = 'none';
+    }
+  }
+
+  amountInput.addEventListener('input', validateAmount);
+
+  withdrawBtn.addEventListener('click', async () => {
+    const amount = parseFloat(amountInput.value);
+    if (!withdrawBtn.classList.contains('active') || isNaN(amount)) return;
+
+    try {
+      // 1. Insert transaction into existing transactions table
+      const { error: insertError } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: userId,
+          amount: amount,
+          type: 'withdrawal',
+          status: 'pending',
+          details: 'Bank Withdrawal Request'
+        });
+
+      if (insertError) throw insertError;
+
+      // 2. Atomic balance update in profiles table using RPC function
+      const { error: rpcError } = await supabase
+        .rpc('deduct_user_balance', {
+          p_user_id: userId,
+          p_amount: amount
+        });
+
+      if (rpcError) throw rpcError;
+
+      alert("Withdrawal initiated!");
+      setTimeout(() => window.location.href = "dashboard.html", 2000);
+    } catch (error) {
+      console.error("Withdrawal error:", error);
+      alert("Error processing withdrawal.");
+    }
+  });
+
+  addBankBtn.addEventListener('click', () => {
+    bankPlaceholder.innerHTML = `
+      <div class="add-bank-form">
+        <input type="text" id="firstName" placeholder="Name" />
+        <input type="text" id="cbu" placeholder="CBU" />
+        <input type="text" id="bankName" placeholder="Bank Name" />
+        <input type="text" id="mobile" placeholder="Mobile Number" />
+        <button id="confirm-btn" class="confirm-btn" disabled>Confirm</button>
+      </div>
+    `;
+
+    const inputs = ['firstName', 'cbu', 'bankName', 'mobile'].map(id => document.getElementById(id));
+    const confirmBtn = document.getElementById('confirm-btn');
+
+    const validateForm = () => {
+      const allFilled = inputs.every(input => input.value.trim() !== '');
+      confirmBtn.disabled = !allFilled;
+      confirmBtn.classList.toggle('active', allFilled);
+    };
+
+    inputs.forEach(input => input.addEventListener('input', validateForm));
+
+    confirmBtn.addEventListener('click', async () => {
+      if (!confirmBtn.classList.contains('active')) return;
+
+      const code = prompt("Enter admin authorization code:");
+      
+      const { data: codeData, error: codeError } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'auth_code')
+        .maybeSingle();
+
+      if (codeError || !codeData || code !== codeData.value) {
+        alert("Invalid authorization code.");
+        return;
+      }
+
+      const bankDetails = {
+        user_id: userId,
+        first_name: inputs[0].value,
+        cbu: inputs[1].value,
+        bank_name: inputs[2].value,
+        mobile: inputs[3].value
+      };
+
+      const { error: upsertError } = await supabase
+        .from('bank_accounts')
+        .upsert(bankDetails, { onConflict: 'user_id' });
+
+      if (upsertError) {
+        console.error("Error saving bank details:", upsertError);
+        alert("Failed to save bank details.");
+        return;
+      }
+
+      bankPlaceholder.innerHTML = `
+        <div class="bank-info">
+          <div>
+            <div>${bankDetails.bank_name.toUpperCase()}</div>
+            <div>XXXXXX${bankDetails.cbu.slice(-4)}</div>
+          </div>
+          <input type="radio" checked />
+        </div>
+      `;
+
+      bankAdded = true;
+      validateAmount();
+      alert("Bank account added successfully!");
+    });
+  });
+</script>
+
+</body>
+</html>
