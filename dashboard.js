@@ -17,7 +17,7 @@ async function initDashboard() {
         .single();
 
     if (profile) {
-        document.getElementById('total-balance').innerText = `$${(profile.balance || 0).toLocaleString()}`;
+        document.getElementById('total-balance').innerText = `ARS ${(profile.balance || 0).toLocaleString()}`;
         
         // Handle rejection alerts if the email was sent
         if (profile.kyc_status === 'unverified' && profile.rejection_reason) {
