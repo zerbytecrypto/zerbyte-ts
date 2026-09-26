@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Zerbyte | Withdraw</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    >
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+
+<body class="bg-[#0b0e11] text-white font-sans min-h-screen">
+
+    <!-- NAVIGATION -->
+    <nav class="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-[#0b0e11]">
+
+        <div class="flex items-center gap-2">
+
+            <a href="dashboard.html"
+               class="flex items-center gap-2">
+
+                <div class="bg-[#00d084] p-1.5 rounded-lg text-black font-bold text-xl">
+                    Z
+                </div>
+
+                <span class="text-xl font-bold">
+                    Zerbyte
+                </span>
+
+            </a>
+
+        </div>
+
+
+        <button
+            onclick="window.location.href='dashboard.html'"
+            class="text-gray-400 hover:text-white transition">
+
+            <i class="fa-solid fa-arrow-left mr-1"></i>
+
+            Dashboard
+
+        </button>
+
+    </nav>
+
+
+
+    <!-- MAIN -->
+    <main class="max-w-xl mx-auto p-4 py-8">
+
+        <!-- BALANCE CARD -->
+        <div class="bg-[#161a1e] border border-gray-800 rounded-3xl p-6 mb-6">
+            <p class="text-gray-500 text-sm">Available Balance</p>
+            <div class="flex items-end justify-between gap-4">
+                <h1 id="balance" class="text-4xl font-bold mt-1 tabular-nums">ARS 0.00</h1>
+                <span id="user-email" class="text-xs text-gray-500 truncate max-w-[160px]">Loading...</span>
+            </div>
+        </div>
+
+        <!-- WITHDRAW CARD -->
+        <div class="bg-[#161a1e] border border-gray-800 rounded-3xl p-6">
+
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
+                    <i class="fa-solid fa-wallet text-orange-400"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold">Withdraw Funds</h2>
+                    <p class="text-gray-500 text-xs">Withdraw your available balance</p>
+                </div>
+            </div>
+
+            <!-- LOADING -->
+            <div id="loading-section" class="text-center py-8 text-gray-500 text-sm">
+                <i class="fa-solid fa-spinner fa-spin mr-2"></i>
+                Loading your withdrawal account...
+            </div>
+
+            <!-- ADD ACCOUNT -->
+            <section id="add-account-section" class="hidden">
+                <div class="border-t border-gray-800 pt-5">
+
+                    <h3 class="font-bold text-lg mb-2">Add Withdrawal Account</h3>
+
+                    <p class="text-gray-500 text-sm leading-relaxed mb-5">
+                        You must add a withdrawal account before you can request a withdrawal.
+                    </p>
+
+                    <div class="mb-4">
+                        <label class="block text-sm text-gray-400 mb-2">Bank Name</label>
+                        <input
+                            type="text"
+                            id="account-bank-name"
+                            placeholder="Bank name"
+                            autocomplete="off"
+                            class="w-full bg-[#0b0e11] border border-gray-800 rounded-xl py-3.5 px-4 focus:outline-none focus:border-[#00d084] transition"
+                        >
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm text-gray-400 mb-2">Account Name</label>
+                        <input
+                            type="text"
+                            id="account-holder-name"
+                            placeholder="Account holder name"
+                            autocomplete="off"
+                            class="w-full bg-[#0b0e11] border border-gray-800 rounded-xl py-3.5 px-4 focus:outline-none focus:border-[#00d084] transition"
+                        >
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm text-gray-400 mb-2">CBU</label>
+                        <input
+                            type="text"
+                            id="account-cbu"
+                            placeholder="Enter 22-digit CBU"
+                            maxlength="22"
+                            inputmode="numeric"
+                            autocomplete="off"
+                            class="w-full bg-[#0b0e11] border border-gray-800 rounded-xl py-3.5 px-4 focus:outline-none focus:border-[#00d084] transition"
+                        >
+                        <p class="text-gray-600 text-xs mt-2">CBU must contain exactly 22 digits.</p>
+                    </div>
+
+                    <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 mb-5">
+                        <div class="flex gap-3">
+                            <i class="fa-solid fa-shield-halved text-yellow-500 mt-0.5"></i>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                Your authentication PIN is completely hidden and will only be requested
+                                after you click <span class="text-white font-semibold">Add Account</span>.
+                                You must contact Zerbyte Live Support to obtain your unique PIN.
+                            </p>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        id="add-account-btn"
+                        onclick="openAuthenticationModal()"
+                        class="w-full bg-[#00d084] text-black font-bold py-4 rounded-xl hover:bg-green-400 transition"
+                    >
+                        <i class="fa-solid fa-plus mr-2"></i>
+                        Add Account
+                    </button>
+
+                    <p id="account-error" class="hidden text-red-400 text-xs mt-3"></p>
+                </div>
+            </section>
+
+            <!-- SAVED ACCOUNT + WITHDRAW -->
+            <section id="saved-account-section" class="hidden">
+
+                <div class="border-t border-gray-800 pt-5">
+
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-bold">Withdrawal Account</h3>
+                            <p class="text-gray-500 text-xs mt-1">This account will receive your withdrawal.</p>
+                        </div>
+                        <span class="text-[#00d084] text-xs font-semibold">
+                            <i class="fa-solid fa-circle-check mr-1"></i> Verified
+                        </span>
+                    </div>
+
+                    <div class="bg-[#0b0e11] border border-gray-800 rounded-xl p-4">
+                        <div class="flex justify-between gap-4 py-2 border-b border-gray-800">
+                            <span class="text-gray-500 text-sm">Bank Name</span>
+                            <span id="saved-bank-name" class="text-sm text-right font-medium"></span>
+                        </div>
+                        <div class="flex justify-between gap-4 py-2 border-b border-gray-800">
+                            <span class="text-gray-500 text-sm">Account Name</span>
+                            <span id="saved-account-name" class="text-sm text-right font-medium"></span>
+                        </div>
+                        <div class="flex justify-between gap-4 py-2">
+                            <span class="text-gray-500 text-sm">CBU</span>
+                            <span id="saved-cbu" class="text-sm text-right font-medium tracking-wider"></span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <form id="withdraw-form" class="space-y-5 mt-6">
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Withdrawal Amount (ARS)</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">ARS</span>
+                            <input
+                                type="number"
+                                id="withdraw-amount"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="0.00"
+                                required
+                                inputmode="decimal"
+                                class="w-full bg-[#0b0e11] border border-gray-800 rounded-xl py-4 pl-14 pr-4 focus:outline-none focus:border-[#00d084] transition"
+                            >
+                        </div>
+                        <p id="amount-error" class="hidden text-red-400 text-xs mt-2"></p>
+                    </div>
+
+                    <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
+                        <div class="flex gap-3">
+                            <i class="fa-solid fa-circle-info text-yellow-500 mt-0.5"></i>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                Your withdrawal will be submitted for review. Your balance will be
+                                deducted immediately and the withdrawal will remain pending until processed.
+                            </p>
+                        </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        id="withdraw-btn"
+                        class="w-full bg-[#00d084] text-black font-bold py-4 rounded-xl hover:bg-green-400 transition"
+                    >
+                        <i class="fa-solid fa-paper-plane mr-2"></i>
+                        Submit Withdrawal
+                    </button>
+
+                    <button
+                        type="button"
+                        onclick="window.location.href='dashboard.html'"
+                        class="w-full text-gray-500 text-sm py-2"
+                    >
+                        Cancel
+                    </button>
+
+                </form>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- AUTHENTICATION PIN MODAL -->
+    <div id="auth-modal" class="hidden fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4">
+
+        <div class="bg-[#161a1e] border border-gray-800 w-full max-w-md rounded-3xl p-7 relative">
+
+            <button
+                type="button"
+                onclick="closeAuthenticationModal()"
+                class="absolute top-4 right-5 text-gray-500 hover:text-white text-2xl"
+                aria-label="Close"
+            >&times;</button>
+
+            <div class="w-14 h-14 rounded-2xl bg-[#00d084]/10 flex items-center justify-center mb-5">
+                <i class="fa-solid fa-shield-halved text-[#00d084] text-xl"></i>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-3">Account Authentication Required</h2>
+
+            <p class="text-gray-400 text-sm leading-relaxed mb-5">
+                Your bank account information has been entered. To add this withdrawal account,
+                you must enter your unique account authentication PIN.
+            </p>
+
+            <div class="bg-[#0b0e11] border border-gray-800 rounded-xl p-4 mb-5">
+                <div class="flex gap-3">
+                    <i class="fa-solid fa-headset text-[#00d084] mt-0.5"></i>
+                    <p class="text-gray-400 text-xs leading-relaxed">
+                        Don't have your authentication PIN?
+                        <br><br>
+                        Please contact
+                        <span class="text-white font-semibold">Zerbyte Live Support</span>
+                        to obtain your unique code.
+                    </p>
+                </div>
+            </div>
+
+            <!-- PIN EXISTS ONLY INSIDE THE POPUP -->
+            <div class="mb-5">
+                <label class="block text-sm text-gray-400 mb-2">Account Authentication PIN</label>
+                <input
+                    type="text"
+                    id="account-auth-pin"
+                    placeholder="Enter your unique PIN"
+                    autocomplete="off"
+                    autocapitalize="characters"
+                    spellcheck="false"
+                    class="w-full bg-[#0b0e11] border border-gray-800 rounded-xl py-4 px-4 focus:outline-none focus:border-[#00d084] transition"
+                >
+            </div>
+
+            <button
+                type="button"
+                id="verify-account-btn"
+                onclick="verifyAndAddAccount()"
+                class="w-full bg-[#00d084] text-black font-bold py-4 rounded-xl hover:bg-green-400 transition"
+            >
+                <i class="fa-solid fa-check mr-2"></i>
+                Verify & Add Account
+            </button>
+
+            <p id="pin-error" class="hidden text-red-400 text-xs mt-3"></p>
+
+        </div>
+    </div>
+
+    <!-- SUCCESS MODAL -->
+    <div id="success-modal" class="hidden fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4">
+
+        <div class="bg-[#161a1e] border border-gray-800 w-full max-w-md rounded-3xl p-7 text-center">
+
+            <div class="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-5">
+                <i class="fa-solid fa-check text-green-400 text-2xl"></i>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-2">Withdrawal Submitted</h2>
+
+            <p class="text-gray-400 text-sm mb-6">
+                Your withdrawal request has been submitted successfully and is now pending review.
+            </p>
+
+            <div class="bg-[#0b0e11] rounded-xl p-4 mb-6 text-left">
+
+                <div class="flex justify-between mb-3">
+                    <span class="text-gray-500 text-sm">Amount</span>
+                    <span id="success-amount" class="font-bold">ARS 0.00</span>
+                </div>
+
+                <div class="flex justify-between">
+                    <span class="text-gray-500 text-sm">Status</span>
+                    <span class="text-yellow-400 text-sm font-bold">Pending</span>
+                </div>
+
+            </div>
+
+            <button
+                type="button"
+                onclick="window.location.href='dashboard.html'"
+                class="w-full bg-[#00d084] text-black font-bold py-3 rounded-xl"
+            >
+                Back to Dashboard
+            </button>
+
+        </div>
+    </div>
+
+<script>
+
+    // =====================================================
+    // SUPABASE CONFIG
+    // =====================================================
+
+    const supabaseUrl =
+        'https://odvjvyctqaidcexrqmrc.supabase.co';
+
+    const supabaseAnonKey =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kdmp2eWN0cWFpZGNleHJxbXJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MTU5ODEsImV4cCI6MjA4MzQ5MTk4MX0.anicfODTH70oAhpniUMI_9KWQL7hie6i9cZHzUJa6hU';
+
+    const supabaseClient =
+        supabase.createClient(
+            supabaseUrl,
+            supabaseAnonKey
+        );
+
+
+    // =====================================================
+    // VARIABLES
+    // =====================================================
+
+    let currentUser = null;
+    let currentBalance = 0;
+    let withdrawalAccount = null;
+
+
+    // =====================================================
+    // INITIALIZE
+    // =====================================================
+
+    async function initWithdrawPage() {
+
+        try {
+
+            const {
+                data: { session },
+                error: authError
+            } = await supabaseClient.auth.getSession();
+
+            if (authError) {
+                throw authError;
+            }
+
+            if (!session || !session.user) {
+                window.location.href = 'auth.html';
+                return;
+            }
+
+            currentUser = session.user;
+
+            document.getElementById('user-email').innerText =
+                currentUser.email || '';
+
+            await loadLiveBalance();
+            await loadWithdrawalAccount();
+
+        } catch (error) {
+
+            console.error(
+                'Withdrawal initialization error:',
+                error
+            );
+
+            alert(
+                'Unable to load your account. Please log in again.'
+            );
+
+            window.location.href = 'auth.html';
+        }
+    }
+
+
+    // =====================================================
+    // LIVE BALANCE
+    // =====================================================
+
+    async function loadLiveBalance() {
+
+        const {
+            data: profile,
+            error: profileError
+        } = await supabaseClient
+            .from('profiles')
+            .select('balance')
+            .eq('id', currentUser.id)
+            .single();
+
+        if (profileError) {
+            throw profileError;
+        }
+
+        if (!profile) {
+            throw new Error(
+                'Your Zerbyte profile could not be found.'
+            );
+        }
+
+        currentBalance =
+            Number(profile.balance || 0);
+
+        displayBalance();
+    }
+
+
+    function displayBalance() {
+
+        document.getElementById('balance').innerText =
+            formatARS(currentBalance);
+    }
+
+
+    // =====================================================
+    // LOAD SAVED ACCOUNT
+    // =====================================================
+
+    async function loadWithdrawalAccount() {
+
+        const loading =
+            document.getElementById('loading-section');
+
+        const addSection =
+            document.getElementById('add-account-section');
+
+        const savedSection =
+            document.getElementById('saved-account-section');
+
+        const {
+            data,
+            error
+        } = await supabaseClient
+            .from('withdrawal_accounts')
+            .select(
+                'id, bank_name, account_name, cbu, created_at'
+            )
+            .eq(
+                'user_id',
+                currentUser.id
+            )
+            .order(
+                'created_at',
+                { ascending: false }
+            )
+            .limit(1);
+
+        loading.classList.add('hidden');
+
+        if (error) {
+
+            console.error(
+                'Withdrawal account load error:',
+                error
+            );
+
+            addSection.classList.remove('hidden');
+
+            showAccountError(
+                'Unable to load your withdrawal account. Please try again.'
+            );
+
+            return;
+        }
+
+        if (!data || data.length === 0) {
+
+            withdrawalAccount = null;
+
+            savedSection.classList.add('hidden');
+            addSection.classList.remove('hidden');
+
+            return;
+        }
+
+        withdrawalAccount = data[0];
+
+        addSection.classList.add('hidden');
+        savedSection.classList.remove('hidden');
+
+        displaySavedAccount();
+    }
+
+
+    // =====================================================
+    // DISPLAY SAVED ACCOUNT
+    // =====================================================
+
+    function displaySavedAccount() {
+
+        if (!withdrawalAccount) {
+            return;
+        }
+
+        document.getElementById(
+            'saved-bank-name'
+        ).innerText =
+            withdrawalAccount.bank_name;
+
+        document.getElementById(
+            'saved-account-name'
+        ).innerText =
+            withdrawalAccount.account_name;
+
+        document.getElementById(
+            'saved-cbu'
+        ).innerText =
+            maskCBU(withdrawalAccount.cbu);
+    }
+
+
+    // =====================================================
+    // ADD ACCOUNT - STEP 1
+    // PIN IS NOT SHOWN UNTIL THIS BUTTON IS CLICKED
+    // =====================================================
+
+    function openAuthenticationModal() {
+
+        const bankName =
+            document
+                .getElementById('account-bank-name')
+                .value
+                .trim();
+
+        const accountName =
+            document
+                .getElementById('account-holder-name')
+                .value
+                .trim();
+
+        const cbu =
+            document
+                .getElementById('account-cbu')
+                .value
+                .trim();
+
+        const error =
+            document.getElementById('account-error');
+
+        error.classList.add('hidden');
+        error.innerText = '';
+
+        if (!bankName) {
+
+            showAccountError(
+                'Please enter the bank name.'
+            );
+
+            return;
+        }
+
+        if (!accountName) {
+
+            showAccountError(
+                'Please enter the account name.'
+            );
+
+            return;
+        }
+
+        // Exactly 22 numeric digits.
+        if (!/^\d{22}$/.test(cbu)) {
+
+            showAccountError(
+                'CBU must contain exactly 22 digits.'
+            );
+
+            return;
+        }
+
+        document.getElementById(
+            'account-auth-pin'
+        ).value = '';
+
+        document.getElementById(
+            'pin-error'
+        ).classList.add('hidden');
+
+        document.getElementById(
+            'auth-modal'
+        ).classList.remove('hidden');
+
+        setTimeout(function () {
+
+            document.getElementById(
+                'account-auth-pin'
+            ).focus();
+
+        }, 100);
+    }
+
+
+    // =====================================================
+    // CLOSE PIN MODAL
+    // =====================================================
+
+    function closeAuthenticationModal() {
+
+        document.getElementById(
+            'auth-modal'
+        ).classList.add('hidden');
+    }
+
+
+    // =====================================================
+    // ADD ACCOUNT - STEP 2
+    // VERIFY PIN THROUGH SUPABASE RPC
+    // =====================================================
+
+    async function verifyAndAddAccount() {
+
+        const bankName =
+            document
+                .getElementById('account-bank-name')
+                .value
+                .trim();
+
+        const accountName =
+            document
+                .getElementById('account-holder-name')
+                .value
+                .trim();
+
+        const cbu =
+            document
+                .getElementById('account-cbu')
+                .value
+                .trim();
+
+        const authPin =
+            document
+                .getElementById('account-auth-pin')
+                .value
+                .trim();
+
+        const button =
+            document.getElementById(
+                'verify-account-btn'
+            );
+
+        const error =
+            document.getElementById(
+                'pin-error'
+            );
+
+        error.classList.add('hidden');
+        error.innerText = '';
+
+        if (!authPin) {
+
+            showPinError(
+                'Please enter your account authentication PIN.'
+            );
+
+            return;
+        }
+
+        if (!bankName || !accountName) {
+
+            showPinError(
+                'Bank name and account name are required.'
+            );
+
+            return;
+        }
+
+        if (!/^\d{22}$/.test(cbu)) {
+
+            showPinError(
+                'CBU must contain exactly 22 digits.'
+            );
+
+            return;
+        }
+
+        button.disabled = true;
+
+        button.innerHTML =
+            '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Verifying...';
+
+        try {
+
+            /*
+             * The PIN is verified by the secure Supabase RPC.
+             * The PIN itself is never read from Supabase by the browser.
+             */
+
+            const {
+                data,
+                error: rpcError
+            } = await supabaseClient.rpc(
+                'add_withdrawal_account',
+                {
+                    p_bank_name: bankName,
+                    p_account_name: accountName,
+                    p_cbu: cbu,
+                    p_auth_code: authPin
+                }
+            );
+
+            if (rpcError) {
+                throw rpcError;
+            }
+
+            if (!data || data.success !== true) {
+
+                throw new Error(
+                    'Withdrawal account could not be added.'
+                );
+            }
+
+            closeAuthenticationModal();
+
+            document.getElementById(
+                'account-bank-name'
+            ).value = '';
+
+            document.getElementById(
+                'account-holder-name'
+            ).value = '';
+
+            document.getElementById(
+                'account-cbu'
+            ).value = '';
+
+            await loadWithdrawalAccount();
+
+        } catch (errorObject) {
+
+            console.error(
+                'Add withdrawal account error:',
+                errorObject
+            );
+
+            showPinError(
+                errorObject.message ||
+                'Unable to add the withdrawal account.'
+            );
+
+        } finally {
+
+            button.disabled = false;
+
+            button.innerHTML =
+                '<i class="fa-solid fa-check mr-2"></i> Verify & Add Account';
+        }
+    }
+
+
+    // =====================================================
+    // WITHDRAW USING EXISTING create_withdrawal RPC
+    // =====================================================
+
+    document
+        .getElementById('withdraw-form')
+        .addEventListener(
+            'submit',
+            async function (event) {
+
+                event.preventDefault();
+
+                const button =
+                    document.getElementById(
+                        'withdraw-btn'
+                    );
+
+                const amountError =
+                    document.getElementById(
+                        'amount-error'
+                    );
+
+                amountError.classList.add('hidden');
+                amountError.innerText = '';
+
+                if (!currentUser || !withdrawalAccount) {
+
+                    showAmountError(
+                        'Please add a withdrawal account before requesting a withdrawal.'
+                    );
+
+                    return;
+                }
+
+                const amount =
+                    Number(
+                        document
+                            .getElementById('withdraw-amount')
+                            .value
+                    );
+
+                if (
+                    !Number.isFinite(amount) ||
+                    amount <= 0
+                ) {
+
+                    showAmountError(
+                        'Enter a valid withdrawal amount.'
+                    );
+
+                    return;
+                }
+
+                button.disabled = true;
+
+                button.classList.add(
+                    'opacity-50',
+                    'cursor-not-allowed'
+                );
+
+                button.innerHTML =
+                    '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Checking Balance...';
+
+                try {
+
+                    /*
+                     * Refresh from Supabase immediately before
+                     * submitting so the browser checks the live balance.
+                     */
+                    await loadLiveBalance();
+
+                    if (amount > currentBalance) {
+
+                        showAmountError(
+                            'Withdrawal amount exceeds your available balance.'
+                        );
+
+                        return;
+                    }
+
+                    button.innerHTML =
+                        '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Processing...';
+
+                    /*
+                     * IMPORTANT:
+                     * This uses the EXISTING create_withdrawal RPC
+                     * signature:
+                     *
+                     * create_withdrawal(
+                     *     withdrawal_amount,
+                     *     withdrawal_details
+                     * )
+                     */
+                    const {
+                        data,
+                        error
+                    } = await supabaseClient.rpc(
+                        'create_withdrawal',
+                        {
+                            withdrawal_amount: amount,
+
+                            withdrawal_details: {
+                                withdrawal_account_id:
+                                    withdrawalAccount.id,
+
+                                bank_name:
+                                    withdrawalAccount.bank_name,
+
+                                account_name:
+                                    withdrawalAccount.account_name,
+
+                                cbu:
+                                    withdrawalAccount.cbu
+                            }
+                        }
+                    );
+
+                    if (error) {
+                        throw error;
+                    }
+
+                    if (
+                        !data ||
+                        data.success !== true
+                    ) {
+
+                        throw new Error(
+                            'Withdrawal could not be completed.'
+                        );
+                    }
+
+                    /*
+                     * Use the new balance returned by the RPC.
+                     */
+                    currentBalance =
+                        Number(
+                            data.new_balance || 0
+                        );
+
+                    displayBalance();
+
+                    document.getElementById(
+                        'success-amount'
+                    ).innerText =
+                        formatARS(amount);
+
+                    document.getElementById(
+                        'withdraw-amount'
+                    ).value = '';
+
+                    document
+                        .getElementById('success-modal')
+                        .classList.remove('hidden');
+
+                } catch (errorObject) {
+
+                    console.error(
+                        'Withdrawal error:',
+                        errorObject
+                    );
+
+                    let message =
+                        errorObject.message ||
+                        'Withdrawal failed. Please try again.';
+
+                    if (
+                        message
+                            .toLowerCase()
+                            .includes(
+                                'insufficient balance'
+                            )
+                    ) {
+
+                        message =
+                            'Insufficient balance.';
+                    }
+
+                    showAmountError(message);
+
+                } finally {
+
+                    button.disabled = false;
+
+                    button.classList.remove(
+                        'opacity-50',
+                        'cursor-not-allowed'
+                    );
+
+                    button.innerHTML =
+                        '<i class="fa-solid fa-paper-plane mr-2"></i> Submit Withdrawal';
+                }
+            }
+        );
+
+
+    // =====================================================
+    // ARS FORMAT
+    // =====================================================
+
+    function formatARS(amount) {
+
+        return new Intl.NumberFormat(
+            'es-AR',
+            {
+                style: 'currency',
+                currency: 'ARS',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }
+        ).format(
+            Number(amount) || 0
+        );
+    }
+
+
+    // =====================================================
+    // MASK CBU
+    // =====================================================
+
+    function maskCBU(cbu) {
+
+        const value =
+            String(cbu || '');
+
+        if (value.length <= 4) {
+            return value;
+        }
+
+        return '••••••••••••••••••' +
+            value.slice(-4);
+    }
+
+
+    // =====================================================
+    // ERROR HELPERS
+    // =====================================================
+
+    function showAccountError(message) {
+
+        const error =
+            document.getElementById(
+                'account-error'
+            );
+
+        error.innerText = message;
+        error.classList.remove('hidden');
+    }
+
+
+    function showPinError(message) {
+
+        const error =
+            document.getElementById(
+                'pin-error'
+            );
+
+        error.innerText = message;
+        error.classList.remove('hidden');
+    }
+
+
+    function showAmountError(message) {
+
+        const error =
+            document.getElementById(
+                'amount-error'
+            );
+
+        error.innerText = message;
+        error.classList.remove('hidden');
+    }
+
+
+    // =====================================================
+    // CLOSE PIN MODAL WHEN CLICKING OUTSIDE
+    // =====================================================
+
+    document
+        .getElementById('auth-modal')
+        .addEventListener(
+            'click',
+            function (event) {
+
+                if (event.target === this) {
+                    closeAuthenticationModal();
+                }
+            }
+        );
+
+
+    // =====================================================
+    // START
+    // =====================================================
+
+    document.addEventListener(
+        'DOMContentLoaded',
+        initWithdrawPage
+    );
+
+</script>
+
+</body>
+</html>
+</body>
+</html>
