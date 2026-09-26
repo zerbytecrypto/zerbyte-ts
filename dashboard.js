@@ -17,11 +17,7 @@ async function initDashboard() {
         .single();
 
     if (profile) {
-  document.getElementById('total-balance').innerText = (profile.balance || 0).toLocaleString('es-AR', {
-    style: 'currency',
-    currency: 'ARS'
-  });
-}
+        document.getElementById('total-balance').innerText = `ARS{(profile.balance || 0).toLocaleString()}`;
 
         
         // Handle rejection alerts if the email was sent
