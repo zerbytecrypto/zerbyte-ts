@@ -68,14 +68,16 @@
     let activeFilter = 'pending';
     const ADMIN_EMAIL = 'hardpaper1212@gmail.com';
 
-    function formatARS(amount) {
-        return new Intl.NumberFormat('es-AR', {
-            style: 'currency',
-            currency: 'ARS',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(Number(amount) || 0);
-    }
+  function formatARS(amount) {
+    return new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency: 'ARS',
+        currencyDisplay: 'code',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(Number(amount) || 0);
+}
+
 
     function escapeHtml(value) {
         return String(value ?? '')
