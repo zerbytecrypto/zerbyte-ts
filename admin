@@ -1,0 +1,2527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Zerbyte Admin</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Font Awesome -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+
+  <style>
+    body {
+      background: #0b0e11;
+      color: white;
+    }
+
+    .glass {
+      background: rgba(17, 24, 39, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .modal-bg {
+      background: rgba(0, 0, 0, 0.78);
+    }
+
+    .tab-active {
+      background: #00d084 !important;
+      color: #06130e !important;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen">
+
+  <!-- =====================================================
+       HEADER
+  ====================================================== -->
+
+  <header class="sticky top-0 z-40 border-b border-white/10 bg-[#0b0e11]/95 backdrop-blur">
+
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+
+      <div>
+        <h1 class="text-xl font-bold">
+          Zerbyte Admin
+        </h1>
+
+        <p class="text-xs text-gray-400 mt-1">
+          User, KYC, balance and withdrawal management
+        </p>
+      </div>
+
+      <button
+        onclick="refreshCurrentView()"
+        class="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15"
+        title="Refresh"
+      >
+        <i class="fa-solid fa-rotate"></i>
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <!-- =====================================================
+       MAIN
+  ====================================================== -->
+
+  <main class="max-w-6xl mx-auto px-4 py-5">
+
+    <!-- TABS -->
+
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-5">
+
+      <button
+        id="tab-pending"
+        onclick="setFilter('pending')"
+        class="tab px-3 py-3 rounded-xl bg-white/10 text-sm"
+      >
+        Pending KYC
+      </button>
+
+      <button
+        id="tab-verified"
+        onclick="setFilter('verified')"
+        class="tab px-3 py-3 rounded-xl bg-white/10 text-sm"
+      >
+        Verified
+      </button>
+
+      <button
+        id="tab-unverified"
+        onclick="setFilter('unverified')"
+        class="tab px-3 py-3 rounded-xl bg-white/10 text-sm"
+      >
+        Unverified
+      </button>
+
+      <button
+        id="tab-withdrawals"
+        onclick="setFilter('withdrawals')"
+        class="tab px-3 py-3 rounded-xl bg-white/10 text-sm"
+      >
+        Withdrawals
+      </button>
+
+      <button
+        id="tab-authcodes"
+        onclick="setFilter('authcodes')"
+        class="tab px-3 py-3 rounded-xl bg-white/10 text-sm"
+      >
+        Auth Codes
+      </button>
+
+    </div>
+
+
+    <!-- CONTENT -->
+
+    <section
+      id="content"
+      class="space-y-4"
+    ></section>
+
+  </main>
+
+
+  <!-- =====================================================
+       ADD BALANCE MODAL
+  ====================================================== -->
+
+  <div
+    id="balanceModal"
+    class="hidden fixed inset-0 z-50 modal-bg items-center justify-center px-4"
+  >
+
+    <div class="glass w-full max-w-md rounded-2xl p-5 shadow-2xl">
+
+      <div class="flex items-center justify-between mb-4">
+
+        <div>
+
+          <h2 class="text-lg font-bold">
+            Add Balance
+          </h2>
+
+          <p
+            id="balanceUserLabel"
+            class="text-xs text-gray-400 mt-1"
+          ></p>
+
+        </div>
+
+        <button
+          onclick="closeBalanceModal()"
+          class="text-gray-400 hover:text-white"
+        >
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+
+      </div>
+
+
+      <div class="mb-4 rounded-xl bg-white/5 p-3">
+
+        <p class="text-xs text-gray-400">
+          Current balance
+        </p>
+
+        <p
+          id="balanceCurrent"
+          class="text-lg font-bold mt-1"
+        >
+          ARS 0.00
+        </p>
+
+      </div>
+
+
+      <label class="block text-sm text-gray-300 mb-2">
+        Amount to add
+      </label>
+
+      <div class="relative mb-4">
+
+        <span
+          class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+        >
+          ARS
+        </span>
+
+        <input
+          id="balanceAmount"
+          type="number"
+          min="0.01"
+          step="0.01"
+          inputmode="decimal"
+          placeholder="300.00"
+          class="w-full bg-black/30 border border-white/10 rounded-xl py-3 pl-14 pr-3 outline-none focus:border-[#00d084]"
+        >
+
+      </div>
+
+
+      <p class="text-xs text-gray-500 mb-4">
+        The entered amount is added to the user's existing balance.
+        It does not replace the current balance.
+      </p>
+
+
+      <div class="flex gap-2">
+
+        <button
+          onclick="closeBalanceModal()"
+          class="flex-1 py-3 rounded-xl bg-white/10 hover:bg-white/15"
+        >
+          Cancel
+        </button>
+
+        <button
+          id="saveBalanceBtn"
+          onclick="submitBalanceUpdate()"
+          class="flex-1 py-3 rounded-xl bg-[#00d084] text-black font-bold hover:opacity-90"
+        >
+          Add Balance
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       KYC REJECTION MODAL
+  ====================================================== -->
+
+  <div
+    id="rejectModal"
+    class="hidden fixed inset-0 z-50 modal-bg items-center justify-center px-4"
+  >
+
+    <div class="glass w-full max-w-md rounded-2xl p-5 shadow-2xl">
+
+      <div class="flex items-center justify-between mb-4">
+
+        <div>
+
+          <h2 class="text-lg font-bold">
+            Reject KYC
+          </h2>
+
+          <p class="text-xs text-gray-400 mt-1">
+            Enter a reason for the rejection.
+          </p>
+
+        </div>
+
+        <button
+          onclick="closeRejectModal()"
+          class="text-gray-400 hover:text-white"
+        >
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+
+      </div>
+
+
+      <textarea
+        id="rejectReason"
+        rows="5"
+        placeholder="Example: ID document is unclear."
+        class="w-full bg-black/30 border border-white/10 rounded-xl p-3 outline-none focus:border-red-400 resize-none"
+      ></textarea>
+
+
+      <div class="flex gap-2 mt-4">
+
+        <button
+          onclick="closeRejectModal()"
+          class="flex-1 py-3 rounded-xl bg-white/10 hover:bg-white/15"
+        >
+          Cancel
+        </button>
+
+        <button
+          id="confirmRejectBtn"
+          onclick="confirmRejectKYC()"
+          class="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600"
+        >
+          Reject KYC
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       WITHDRAWAL REJECTION MODAL
+  ====================================================== -->
+
+  <div
+    id="withdrawRejectModal"
+    class="hidden fixed inset-0 z-50 modal-bg items-center justify-center px-4"
+  >
+
+    <div class="glass w-full max-w-md rounded-2xl p-5 shadow-2xl">
+
+      <div class="flex items-center justify-between mb-4">
+
+        <div>
+
+          <h2 class="text-lg font-bold">
+            Reject Withdrawal
+          </h2>
+
+          <p class="text-xs text-gray-400 mt-1">
+            The withdrawal will be rejected and the amount will be
+            returned to the user's balance.
+          </p>
+
+        </div>
+
+        <button
+          onclick="closeWithdrawRejectModal()"
+          class="text-gray-400 hover:text-white"
+        >
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+
+      </div>
+
+
+      <textarea
+        id="withdrawRejectReason"
+        rows="5"
+        placeholder="Optional rejection reason"
+        class="w-full bg-black/30 border border-white/10 rounded-xl p-3 outline-none focus:border-red-400 resize-none"
+      ></textarea>
+
+
+      <div class="flex gap-2 mt-4">
+
+        <button
+          onclick="closeWithdrawRejectModal()"
+          class="flex-1 py-3 rounded-xl bg-white/10 hover:bg-white/15"
+        >
+          Cancel
+        </button>
+
+        <button
+          id="confirmWithdrawRejectBtn"
+          onclick="confirmRejectWithdrawal()"
+          class="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600"
+        >
+          Reject & Refund
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       JAVASCRIPT
+  ====================================================== -->
+
+  <script>
+
+    /* =====================================================
+       SUPABASE CONFIG
+    ====================================================== */
+
+    const SUPABASE_URL =
+      'https://odvjvyctqaidcexrqmrc.supabase.co';
+
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kdmp2eWN0cWFpZGNleHJxbXJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MTU5ODEsImV4cCI6MjA4MzQ5MTk4MX0.anicfODTH70oAhpniUMI_9KWQL7hie6i9cZHzUJa6hU';
+
+    const ADMIN_EMAIL =
+      'hardpaper1212@gmail.com';
+
+
+    const sb =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+      );
+
+
+    /* =====================================================
+       STATE
+    ====================================================== */
+
+    let activeFilter = 'pending';
+
+    let selectedBalanceUserId = null;
+
+    let selectedRejectUserId = null;
+
+    let selectedWithdrawalId = null;
+
+
+    /* =====================================================
+       HELPERS
+    ====================================================== */
+
+    function formatARS(value) {
+
+      const number =
+        Number(value || 0);
+
+      return new Intl.NumberFormat(
+        'es-AR',
+        {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }
+      ).format(number) + ' ARS';
+
+    }
+
+
+    function formatDate(value) {
+
+      if (!value) {
+        return '—';
+      }
+
+      const date =
+        new Date(value);
+
+      if (Number.isNaN(date.getTime())) {
+        return value;
+      }
+
+      return date.toLocaleString(
+        'en-GB',
+        {
+          dateStyle: 'medium',
+          timeStyle: 'short'
+        }
+      );
+
+    }
+
+
+    function escapeHtml(value) {
+
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+    }
+
+
+    function showMessage(message) {
+      alert(message);
+    }
+
+
+    function setLoading(message = 'Loading...') {
+
+      document.getElementById('content').innerHTML = `
+
+        <div class="glass rounded-2xl p-8 text-center">
+
+          <i class="fa-solid fa-spinner fa-spin text-2xl text-[#00d084]"></i>
+
+          <p class="text-gray-400 mt-3">
+            ${escapeHtml(message)}
+          </p>
+
+        </div>
+
+      `;
+
+    }
+
+
+    function setEmpty(message) {
+
+      document.getElementById('content').innerHTML = `
+
+        <div class="glass rounded-2xl p-8 text-center">
+
+          <i class="fa-solid fa-inbox text-3xl text-gray-500"></i>
+
+          <p class="text-gray-300 mt-3">
+            ${escapeHtml(message)}
+          </p>
+
+        </div>
+
+      `;
+
+    }
+
+
+    function setError(message) {
+
+      document.getElementById('content').innerHTML = `
+
+        <div class="rounded-2xl border border-red-500/30 bg-red-500/10 p-5">
+
+          <div class="flex gap-3">
+
+            <i class="fa-solid fa-circle-exclamation text-red-400 mt-1"></i>
+
+            <div>
+
+              <p class="font-semibold text-red-300">
+                Error
+              </p>
+
+              <p class="text-sm text-red-200/80 mt-1">
+                ${escapeHtml(message)}
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      `;
+
+    }
+
+
+    /* =====================================================
+       AUTH
+    ====================================================== */
+
+    async function checkAuth() {
+
+      const {
+        data: { user },
+        error
+      } = await sb.auth.getUser();
+
+
+      if (error || !user) {
+
+        window.location.href =
+          'login.html';
+
+        return false;
+
+      }
+
+
+      if (
+        (user.email || '').toLowerCase()
+        !==
+        ADMIN_EMAIL.toLowerCase()
+      ) {
+
+        alert(
+          'Unauthorized. Admin access required.'
+        );
+
+        await sb.auth.signOut();
+
+        window.location.href =
+          'login.html';
+
+        return false;
+
+      }
+
+
+      return true;
+
+    }
+
+
+    /* =====================================================
+       TABS
+    ====================================================== */
+
+    function updateTabs() {
+
+      document
+        .querySelectorAll('.tab')
+        .forEach(tab => {
+          tab.classList.remove('tab-active');
+        });
+
+
+      const active =
+        document.getElementById(
+          'tab-' + activeFilter
+        );
+
+
+      if (active) {
+        active.classList.add('tab-active');
+      }
+
+    }
+
+
+    function setFilter(filter) {
+
+      activeFilter =
+        filter;
+
+      updateTabs();
+
+      refreshCurrentView();
+
+    }
+
+
+    async function refreshCurrentView() {
+
+      const authenticated =
+        await checkAuth();
+
+
+      if (!authenticated) {
+        return;
+      }
+
+
+      if (activeFilter === 'withdrawals') {
+
+        await loadPendingWithdrawals();
+
+        return;
+
+      }
+
+
+      if (activeFilter === 'authcodes') {
+
+        await loadAuthCodes();
+
+        return;
+
+      }
+
+
+      await loadUsers();
+
+    }
+
+
+    /* =====================================================
+       USERS
+    ====================================================== */
+
+    async function loadUsers() {
+
+      setLoading(
+        'Loading users...'
+      );
+
+
+      let query =
+        sb
+          .from('profiles')
+          .select('*')
+          .order(
+            'created_at',
+            {
+              ascending: false
+            }
+          );
+
+
+      if (activeFilter === 'pending') {
+
+        query =
+          query.eq(
+            'kyc_status',
+            'pending'
+          );
+
+      }
+
+
+      if (activeFilter === 'verified') {
+
+        query =
+          query.eq(
+            'kyc_status',
+            'verified'
+          );
+
+      }
+
+
+      if (activeFilter === 'unverified') {
+
+        query =
+          query.or(
+            'kyc_status.is.null,kyc_status.eq.unverified'
+          );
+
+      }
+
+
+      const {
+        data,
+        error
+      } =
+        await query;
+
+
+      if (error) {
+
+        setError(
+          error.message
+        );
+
+        return;
+
+      }
+
+
+      if (
+        !data ||
+        data.length === 0
+      ) {
+
+        setEmpty(
+          'No users found in this section.'
+        );
+
+        return;
+
+      }
+
+
+      document.getElementById(
+        'content'
+      ).innerHTML =
+        data
+          .map(
+            user =>
+              renderUserCard(user)
+          )
+          .join('');
+
+    }
+
+
+    function renderUserCard(user) {
+
+      const fullName =
+        `${user.first_name || ''}
+        ${user.last_name || ''}`
+          .trim()
+        ||
+        'Unnamed User';
+
+
+      const status =
+        String(
+          user.kyc_status ||
+          'unverified'
+        ).toLowerCase();
+
+
+      let statusClass =
+        'bg-gray-500/15 text-gray-300';
+
+
+      if (status === 'pending') {
+
+        statusClass =
+          'bg-yellow-500/15 text-yellow-300';
+
+      }
+
+
+      if (
+        status === 'verified' ||
+        status === 'approved'
+      ) {
+
+        statusClass =
+          'bg-emerald-500/15 text-emerald-300';
+
+      }
+
+
+      if (status === 'rejected') {
+
+        statusClass =
+          'bg-red-500/15 text-red-300';
+
+      }
+
+
+      return `
+
+        <article class="glass rounded-2xl p-4">
+
+          <div class="flex flex-col gap-4">
+
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+
+              <div>
+
+                <h2 class="font-bold text-lg">
+                  ${escapeHtml(fullName)}
+                </h2>
+
+                <p class="text-sm text-gray-400 break-all">
+                  ${escapeHtml(
+                    user.email ||
+                    'No email'
+                  )}
+                </p>
+
+                <p class="text-xs text-gray-500 mt-1 break-all">
+                  ID:
+                  ${escapeHtml(user.id)}
+                </p>
+
+              </div>
+
+
+              <span
+                class="inline-flex self-start px-3 py-1 rounded-full text-xs ${statusClass}"
+              >
+                ${escapeHtml(status)}
+              </span>
+
+            </div>
+
+
+            <div class="grid grid-cols-2 gap-3">
+
+              <div class="rounded-xl bg-black/20 p-3">
+
+                <p class="text-xs text-gray-500">
+                  Balance
+                </p>
+
+                <p class="font-bold mt-1">
+                  ${formatARS(user.balance)}
+                </p>
+
+              </div>
+
+
+              <div class="rounded-xl bg-black/20 p-3">
+
+                <p class="text-xs text-gray-500">
+                  Created
+                </p>
+
+                <p class="text-sm mt-1">
+                  ${escapeHtml(
+                    formatDate(
+                      user.created_at
+                    )
+                  )}
+                </p>
+
+              </div>
+
+            </div>
+
+
+            ${
+              user.rejection_reason
+                ? `
+
+              <div class="rounded-xl bg-red-500/10 border border-red-500/20 p-3">
+
+                <p class="text-xs text-red-300">
+                  Rejection reason
+                </p>
+
+                <p class="text-sm text-red-100 mt-1">
+                  ${escapeHtml(
+                    user.rejection_reason
+                  )}
+                </p>
+
+              </div>
+
+              `
+                : ''
+            }
+
+
+            <div class="flex flex-wrap gap-2">
+
+              <button
+                onclick="openBalanceModal(
+                  '${escapeHtml(user.id)}',
+                  ${Number(user.balance || 0)},
+                  '${escapeHtml(fullName)}'
+                )"
+                class="px-3 py-2 rounded-lg bg-[#00d084] text-black text-sm font-bold"
+              >
+
+                <i class="fa-solid fa-plus mr-1"></i>
+
+                Add Balance
+
+              </button>
+
+
+              ${
+                user.id_front_url
+                  ? `
+
+                <button
+                  onclick="viewFile('${escapeHtml(
+                    user.id_front_url
+                  )}')"
+                  class="px-3 py-2 rounded-lg bg-white/10 text-sm"
+                >
+
+                  <i class="fa-solid fa-id-card mr-1"></i>
+
+                  ID Front
+
+                </button>
+
+                `
+                  : ''
+              }
+
+
+              ${
+                user.id_back_url
+                  ? `
+
+                <button
+                  onclick="viewFile('${escapeHtml(
+                    user.id_back_url
+                  )}')"
+                  class="px-3 py-2 rounded-lg bg-white/10 text-sm"
+                >
+
+                  <i class="fa-solid fa-id-card mr-1"></i>
+
+                  ID Back
+
+                </button>
+
+                `
+                  : ''
+              }
+
+
+              ${
+                status === 'pending'
+                  ? `
+
+                <button
+                  onclick="approveKYC('${escapeHtml(
+                    user.id
+                  )}')"
+                  class="px-3 py-2 rounded-lg bg-emerald-500 text-black text-sm font-bold"
+                >
+
+                  <i class="fa-solid fa-check mr-1"></i>
+
+                  Approve
+
+                </button>
+
+
+                <button
+                  onclick="openRejectModal('${escapeHtml(
+                    user.id
+                  )}')"
+                  class="px-3 py-2 rounded-lg bg-red-500 text-white text-sm font-bold"
+                >
+
+                  <i class="fa-solid fa-xmark mr-1"></i>
+
+                  Reject
+
+                </button>
+
+                `
+                  : ''
+              }
+
+
+              <button
+                onclick="deleteUser('${escapeHtml(
+                  user.id
+                )}')"
+                class="px-3 py-2 rounded-lg bg-red-500/10 text-red-300 text-sm"
+              >
+
+                <i class="fa-solid fa-trash mr-1"></i>
+
+                Delete Profile
+
+              </button>
+
+            </div>
+
+          </div>
+
+        </article>
+
+      `;
+
+    }
+
+
+    /* =====================================================
+       ADD BALANCE
+    ====================================================== */
+
+    function openBalanceModal(
+      userId,
+      currentBalance,
+      fullName
+    ) {
+
+      selectedBalanceUserId =
+        userId;
+
+
+      document.getElementById(
+        'balanceUserLabel'
+      ).textContent =
+        fullName ||
+        'Selected user';
+
+
+      document.getElementById(
+        'balanceCurrent'
+      ).textContent =
+        formatARS(
+          currentBalance
+        );
+
+
+      document.getElementById(
+        'balanceAmount'
+      ).value =
+        '';
+
+
+      const modal =
+        document.getElementById(
+          'balanceModal'
+        );
+
+
+      modal.classList.remove(
+        'hidden'
+      );
+
+      modal.classList.add(
+        'flex'
+      );
+
+
+      setTimeout(
+        () => {
+
+          document
+            .getElementById(
+              'balanceAmount'
+            )
+            .focus();
+
+        },
+        50
+      );
+
+    }
+
+
+    function closeBalanceModal() {
+
+      selectedBalanceUserId =
+        null;
+
+
+      const modal =
+        document.getElementById(
+          'balanceModal'
+        );
+
+
+      modal.classList.add(
+        'hidden'
+      );
+
+      modal.classList.remove(
+        'flex'
+      );
+
+
+      document.getElementById(
+        'balanceAmount'
+      ).value =
+        '';
+
+    }
+
+
+    async function submitBalanceUpdate() {
+
+      if (!selectedBalanceUserId) {
+
+        showMessage(
+          'No user selected.'
+        );
+
+        return;
+
+      }
+
+
+      const amount =
+        Number(
+          document.getElementById(
+            'balanceAmount'
+          ).value
+        );
+
+
+      if (
+        !Number.isFinite(amount) ||
+        amount <= 0
+      ) {
+
+        showMessage(
+          'Enter a valid amount greater than zero.'
+        );
+
+        return;
+
+      }
+
+
+      const button =
+        document.getElementById(
+          'saveBalanceBtn'
+        );
+
+
+      button.disabled =
+        true;
+
+      button.textContent =
+        'Adding...';
+
+
+      try {
+
+        /*
+          IMPORTANT:
+
+          This calls admin_add_balance.
+
+          Example:
+
+          Old balance = ARS 700
+          Add amount   = ARS 300
+          New balance  = ARS 1000
+
+          Transaction:
+
+          type   = deposit
+          amount = 300
+          status = completed
+        */
+
+        const {
+          data,
+          error
+        } =
+          await sb.rpc(
+            'admin_add_balance',
+            {
+              p_user_id:
+                selectedBalanceUserId,
+
+              p_amount:
+                amount
+            }
+          );
+
+
+        if (error) {
+          throw error;
+        }
+
+
+        closeBalanceModal();
+
+
+        const newBalance =
+          data &&
+          typeof data === 'object' &&
+          !Array.isArray(data)
+            ? data.new_balance
+            : null;
+
+
+        if (
+          newBalance !== null &&
+          newBalance !== undefined
+        ) {
+
+          showMessage(
+            `Balance added successfully.
+
+Added: ${formatARS(amount)}
+
+New balance: ${formatARS(
+              newBalance
+            )}`
+          );
+
+        } else {
+
+          showMessage(
+            `Balance added successfully.
+
+Added: ${formatARS(amount)}`
+          );
+
+        }
+
+
+        await refreshCurrentView();
+
+      }
+
+      catch (error) {
+
+        showMessage(
+          error.message ||
+          'Unable to add balance.'
+        );
+
+      }
+
+      finally {
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          'Add Balance';
+
+      }
+
+    }
+
+
+    /* =====================================================
+       KYC APPROVAL
+    ====================================================== */
+
+    async function approveKYC(
+      userId
+    ) {
+
+      if (
+        !confirm(
+          'Approve this user KYC?'
+        )
+      ) {
+        return;
+      }
+
+
+      const {
+        error
+      } =
+        await sb
+          .from('profiles')
+          .update({
+            kyc_status:
+              'verified',
+
+            rejection_reason:
+              null
+          })
+          .eq(
+            'id',
+            userId
+          );
+
+
+      if (error) {
+
+        showMessage(
+          error.message
+        );
+
+        return;
+
+      }
+
+
+      showMessage(
+        'KYC approved.'
+      );
+
+
+      await refreshCurrentView();
+
+    }
+
+
+    /* =====================================================
+       KYC REJECTION
+    ====================================================== */
+
+    function openRejectModal(
+      userId
+    ) {
+
+      selectedRejectUserId =
+        userId;
+
+
+      document.getElementById(
+        'rejectReason'
+      ).value =
+        '';
+
+
+      const modal =
+        document.getElementById(
+          'rejectModal'
+        );
+
+
+      modal.classList.remove(
+        'hidden'
+      );
+
+      modal.classList.add(
+        'flex'
+      );
+
+
+      setTimeout(
+        () => {
+
+          document
+            .getElementById(
+              'rejectReason'
+            )
+            .focus();
+
+        },
+        50
+      );
+
+    }
+
+
+    function closeRejectModal() {
+
+      selectedRejectUserId =
+        null;
+
+
+      const modal =
+        document.getElementById(
+          'rejectModal'
+        );
+
+
+      modal.classList.add(
+        'hidden'
+      );
+
+      modal.classList.remove(
+        'flex'
+      );
+
+
+      document.getElementById(
+        'rejectReason'
+      ).value =
+        '';
+
+    }
+
+
+    async function confirmRejectKYC() {
+
+      if (!selectedRejectUserId) {
+        return;
+      }
+
+
+      const reason =
+        document.getElementById(
+          'rejectReason'
+        ).value.trim()
+        ||
+        'KYC verification was rejected.';
+
+
+      const button =
+        document.getElementById(
+          'confirmRejectBtn'
+        );
+
+
+      button.disabled =
+        true;
+
+      button.textContent =
+        'Rejecting...';
+
+
+      try {
+
+        const {
+          error
+        } =
+          await sb
+            .from('profiles')
+            .update({
+              kyc_status:
+                'rejected',
+
+              rejection_reason:
+                reason
+            })
+            .eq(
+              'id',
+              selectedRejectUserId
+            );
+
+
+        if (error) {
+          throw error;
+        }
+
+
+        closeRejectModal();
+
+
+        showMessage(
+          'KYC rejected.'
+        );
+
+
+        await refreshCurrentView();
+
+      }
+
+      catch (error) {
+
+        showMessage(
+          error.message ||
+          'Unable to reject KYC.'
+        );
+
+      }
+
+      finally {
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          'Reject KYC';
+
+      }
+
+    }
+
+
+    /* =====================================================
+       VIEW KYC FILE
+    ====================================================== */
+
+    async function viewFile(
+      path
+    ) {
+
+      try {
+
+        if (!path) {
+
+          showMessage(
+            'No file was provided.'
+          );
+
+          return;
+
+        }
+
+
+        /*
+          If the database contains
+          a complete URL, open it.
+        */
+
+        if (
+          /^https?:\/\//i.test(
+            path
+          )
+        ) {
+
+          window.open(
+            path,
+            '_blank'
+          );
+
+          return;
+
+        }
+
+
+        const {
+          data,
+          error
+        } =
+          await sb.storage
+            .from(
+              'kyc-documents'
+            )
+            .createSignedUrl(
+              path,
+              300
+            );
+
+
+        if (error) {
+          throw error;
+        }
+
+
+        if (
+          !data ||
+          !data.signedUrl
+        ) {
+
+          throw new Error(
+            'Unable to create a file URL.'
+          );
+
+        }
+
+
+        window.open(
+          data.signedUrl,
+          '_blank'
+        );
+
+      }
+
+      catch (error) {
+
+        showMessage(
+          error.message ||
+          'Unable to open document.'
+        );
+
+      }
+
+    }
+
+
+    /* =====================================================
+       DELETE PROFILE
+    ====================================================== */
+
+    async function deleteUser(
+      userId
+    ) {
+
+      if (
+        !confirm(
+          'Delete this profile from the profiles table?\n\n' +
+          'This does not automatically guarantee deletion of the Auth user.'
+        )
+      ) {
+
+        return;
+
+      }
+
+
+      const {
+        error
+      } =
+        await sb
+          .from('profiles')
+          .delete()
+          .eq(
+            'id',
+            userId
+          );
+
+
+      if (error) {
+
+        showMessage(
+          error.message
+        );
+
+        return;
+
+      }
+
+
+      showMessage(
+        'Profile deleted.'
+      );
+
+
+      await refreshCurrentView();
+
+    }
+
+
+    /* =====================================================
+       PENDING WITHDRAWALS
+    ====================================================== */
+
+    async function loadPendingWithdrawals() {
+
+      setLoading(
+        'Loading pending withdrawals...'
+      );
+
+
+      const {
+        data,
+        error
+      } =
+        await sb.rpc(
+          'admin_get_pending_withdrawals'
+        );
+
+
+      if (error) {
+
+        setError(
+          error.message
+        );
+
+        return;
+
+      }
+
+
+      if (
+        !data ||
+        data.length === 0
+      ) {
+
+        setEmpty(
+          'There are no pending withdrawals.'
+        );
+
+        return;
+
+      }
+
+
+      document.getElementById(
+        'content'
+      ).innerHTML =
+        data
+          .map(
+            withdrawal =>
+              renderWithdrawal(
+                withdrawal
+              )
+          )
+          .join('');
+
+    }
+
+
+    function renderWithdrawal(
+      item
+    ) {
+
+      const details =
+        item.details ||
+        {};
+
+
+      const fullName =
+        `${item.first_name || ''}
+        ${item.last_name || ''}`
+          .trim()
+        ||
+        'Unnamed User';
+
+
+      const bankName =
+        details.bank_name ||
+        details.bankName ||
+        '—';
+
+
+      const accountName =
+        details.account_name ||
+        details.accountName ||
+        '—';
+
+
+      const cbu =
+        details.cbu ||
+        '—';
+
+
+      return `
+
+        <article class="glass rounded-2xl p-4">
+
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+
+            <div>
+
+              <div class="flex items-center gap-2">
+
+                <span
+                  class="w-2.5 h-2.5 rounded-full bg-yellow-400"
+                ></span>
+
+                <h2 class="font-bold">
+                  ${escapeHtml(fullName)}
+                </h2>
+
+              </div>
+
+
+              <p class="text-sm text-gray-400 mt-1 break-all">
+
+                ${escapeHtml(
+                  item.email ||
+                  'No email'
+                )}
+
+              </p>
+
+
+              <p class="text-xs text-gray-500 mt-1 break-all">
+
+                Transaction ID:
+                ${escapeHtml(
+                  item.transaction_id
+                )}
+
+              </p>
+
+            </div>
+
+
+            <span
+              class="px-3 py-1 rounded-full bg-yellow-500/15 text-yellow-300 text-xs self-start"
+            >
+              Pending
+            </span>
+
+          </div>
+
+
+          <div class="grid grid-cols-2 gap-3 mt-4">
+
+            <div class="rounded-xl bg-black/20 p-3">
+
+              <p class="text-xs text-gray-500">
+                Withdrawal
+              </p>
+
+              <p class="font-bold text-red-300 mt-1">
+
+                -${formatARS(
+                  item.amount
+                )}
+
+              </p>
+
+            </div>
+
+
+            <div class="rounded-xl bg-black/20 p-3">
+
+              <p class="text-xs text-gray-500">
+                Requested
+              </p>
+
+              <p class="text-sm mt-1">
+
+                ${escapeHtml(
+                  formatDate(
+                    item.created_at
+                  )
+                )}
+
+              </p>
+
+            </div>
+
+
+            <div class="rounded-xl bg-black/20 p-3">
+
+              <p class="text-xs text-gray-500">
+                Balance before
+              </p>
+
+              <p class="font-semibold mt-1">
+
+                ${formatARS(
+                  item.balance_before
+                )}
+
+              </p>
+
+            </div>
+
+
+            <div class="rounded-xl bg-black/20 p-3">
+
+              <p class="text-xs text-gray-500">
+                Balance after
+              </p>
+
+              <p class="font-semibold mt-1">
+
+                ${formatARS(
+                  item.balance_after
+                )}
+
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="mt-4 rounded-xl bg-black/20 p-4">
+
+            <p class="text-xs text-gray-500 mb-2">
+              Withdrawal account
+            </p>
+
+            <div class="space-y-1 text-sm">
+
+              <p>
+                <span class="text-gray-500">
+                  Bank:
+                </span>
+
+                ${escapeHtml(
+                  bankName
+                )}
+              </p>
+
+
+              <p>
+                <span class="text-gray-500">
+                  Account name:
+                </span>
+
+                ${escapeHtml(
+                  accountName
+                )}
+              </p>
+
+
+              <p>
+                <span class="text-gray-500">
+                  CBU:
+                </span>
+
+                ${escapeHtml(
+                  cbu
+                )}
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="flex flex-wrap gap-2 mt-4">
+
+            <button
+              onclick="approveWithdrawal('${escapeHtml(
+                item.transaction_id
+              )}')"
+              class="px-4 py-2 rounded-lg bg-emerald-500 text-black font-bold text-sm"
+            >
+
+              <i class="fa-solid fa-check mr-1"></i>
+
+              Approve Withdrawal
+
+            </button>
+
+
+            <button
+              onclick="openWithdrawRejectModal('${escapeHtml(
+                item.transaction_id
+              )}')"
+              class="px-4 py-2 rounded-lg bg-red-500 text-white font-bold text-sm"
+            >
+
+              <i class="fa-solid fa-xmark mr-1"></i>
+
+              Reject & Refund
+
+            </button>
+
+          </div>
+
+        </article>
+
+      `;
+
+    }
+
+
+    /* =====================================================
+       APPROVE WITHDRAWAL
+    ====================================================== */
+
+    async function approveWithdrawal(
+      transactionId
+    ) {
+
+      if (
+        !confirm(
+          'Approve this withdrawal?\n\n' +
+          'The amount has already been deducted from the user balance. ' +
+          'Approving will only change the withdrawal status to completed.'
+        )
+      ) {
+
+        return;
+
+      }
+
+
+      const {
+        error
+      } =
+        await sb.rpc(
+          'admin_approve_withdrawal',
+          {
+            p_transaction_id:
+              transactionId
+          }
+        );
+
+
+      if (error) {
+
+        showMessage(
+          error.message
+        );
+
+        return;
+
+      }
+
+
+      showMessage(
+        'Withdrawal approved. No additional balance was deducted.'
+      );
+
+
+      await loadPendingWithdrawals();
+
+    }
+
+
+    /* =====================================================
+       REJECT WITHDRAWAL
+    ====================================================== */
+
+    function openWithdrawRejectModal(
+      transactionId
+    ) {
+
+      selectedWithdrawalId =
+        transactionId;
+
+
+      document.getElementById(
+        'withdrawRejectReason'
+      ).value =
+        '';
+
+
+      const modal =
+        document.getElementById(
+          'withdrawRejectModal'
+        );
+
+
+      modal.classList.remove(
+        'hidden'
+      );
+
+      modal.classList.add(
+        'flex'
+      );
+
+
+      setTimeout(
+        () => {
+
+          document
+            .getElementById(
+              'withdrawRejectReason'
+            )
+            .focus();
+
+        },
+        50
+      );
+
+    }
+
+
+    function closeWithdrawRejectModal() {
+
+      selectedWithdrawalId =
+        null;
+
+
+      const modal =
+        document.getElementById(
+          'withdrawRejectModal'
+        );
+
+
+      modal.classList.add(
+        'hidden'
+      );
+
+      modal.classList.remove(
+        'flex'
+      );
+
+
+      document.getElementById(
+        'withdrawRejectReason'
+      ).value =
+        '';
+
+    }
+
+
+    async function confirmRejectWithdrawal() {
+
+      if (!selectedWithdrawalId) {
+        return;
+      }
+
+
+      const reason =
+        document.getElementById(
+          'withdrawRejectReason'
+        ).value.trim()
+        ||
+        null;
+
+
+      const button =
+        document.getElementById(
+          'confirmWithdrawRejectBtn'
+        );
+
+
+      button.disabled =
+        true;
+
+      button.textContent =
+        'Refunding...';
+
+
+      try {
+
+        const {
+          error
+        } =
+          await sb.rpc(
+            'admin_reject_withdrawal',
+            {
+              p_transaction_id:
+                selectedWithdrawalId,
+
+              p_reason:
+                reason
+            }
+          );
+
+
+        if (error) {
+          throw error;
+        }
+
+
+        closeWithdrawRejectModal();
+
+
+        showMessage(
+          'Withdrawal rejected.\n\n' +
+          'The original withdrawal is now rejected and the amount has been returned to the user balance as a separate refund transaction.'
+        );
+
+
+        await loadPendingWithdrawals();
+
+      }
+
+      catch (error) {
+
+        showMessage(
+          error.message ||
+          'Unable to reject withdrawal.'
+        );
+
+      }
+
+      finally {
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          'Reject & Refund';
+
+      }
+
+    }
+
+
+    /* =====================================================
+       AUTH CODES
+    ====================================================== */
+
+    async function loadAuthCodes() {
+
+      setLoading(
+        'Loading authentication codes...'
+      );
+
+
+      const {
+        data,
+        error
+      } =
+        await sb.rpc(
+          'get_all_account_auth_codes'
+        );
+
+
+      if (error) {
+
+        setError(
+          error.message
+        );
+
+        return;
+
+      }
+
+
+      if (
+        !data ||
+        data.length === 0
+      ) {
+
+        setEmpty(
+          'No authentication codes were found.'
+        );
+
+        return;
+
+      }
+
+
+      document.getElementById(
+        'content'
+      ).innerHTML = `
+
+        <div class="glass rounded-2xl overflow-hidden">
+
+          <div class="p-4 border-b border-white/10">
+
+            <h2 class="font-bold">
+              User Authentication Codes
+            </h2>
+
+            <p class="text-xs text-gray-500 mt-1">
+              These are private admin authentication codes.
+              Verify the user's identity before providing a code.
+            </p>
+
+          </div>
+
+
+          <div class="divide-y divide-white/10">
+
+            ${data
+              .map(
+                row =>
+                  renderAuthCode(row)
+              )
+              .join('')}
+
+          </div>
+
+        </div>
+
+      `;
+
+    }
+
+
+    function renderAuthCode(
+      row
+    ) {
+
+      const fullName =
+        `${row.first_name || ''}
+        ${row.last_name || ''}`
+          .trim()
+        ||
+        'Unnamed User';
+
+
+      const userId =
+        row.user_id ||
+        row.id ||
+        '';
+
+
+      const code =
+        row.auth_code ||
+        row.code ||
+        '—';
+
+
+      return `
+
+        <div class="p-4">
+
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+
+            <div class="min-w-0">
+
+              <h3 class="font-semibold">
+                ${escapeHtml(
+                  fullName
+                )}
+              </h3>
+
+
+              <p class="text-sm text-gray-400 break-all mt-1">
+
+                ${escapeHtml(
+                  row.email ||
+                  'No email'
+                )}
+
+              </p>
+
+
+              <p class="text-xs text-gray-500 break-all mt-1">
+
+                User ID:
+                ${escapeHtml(
+                  userId
+                )}
+
+              </p>
+
+
+              <p class="text-xs text-gray-500 mt-1">
+
+                Created:
+                ${escapeHtml(
+                  formatDate(
+                    row.created_at
+                  )
+                )}
+
+              </p>
+
+            </div>
+
+
+            <div class="flex items-center gap-2">
+
+              <div class="rounded-xl bg-black/30 border border-white/10 px-4 py-3">
+
+                <p class="text-xs text-gray-500">
+                  Auth PIN
+                </p>
+
+                <p class="font-mono text-xl tracking-widest font-bold text-[#00d084]">
+
+                  ${escapeHtml(
+                    code
+                  )}
+
+                </p>
+
+              </div>
+
+
+              <button
+                onclick="copyAuthCode('${escapeHtml(
+                  code
+                )}')"
+                class="px-3 py-3 rounded-xl bg-white/10 hover:bg-white/15"
+                title="Copy code"
+              >
+
+                <i class="fa-regular fa-copy"></i>
+
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      `;
+
+    }
+
+
+    async function copyAuthCode(
+      code
+    ) {
+
+      if (!code) {
+
+        showMessage(
+          'No code available.'
+        );
+
+        return;
+
+      }
+
+
+      try {
+
+        await navigator.clipboard.writeText(
+          code
+        );
+
+        showMessage(
+          'Auth code copied.'
+        );
+
+      }
+
+      catch {
+
+        showMessage(
+          'Unable to copy automatically. Code: ' +
+          code
+        );
+
+      }
+
+    }
+
+
+    /* =====================================================
+       MODAL BACKDROP
+    ====================================================== */
+
+    document
+      .getElementById(
+        'balanceModal'
+      )
+      .addEventListener(
+        'click',
+        event => {
+
+          if (
+            event.target.id ===
+            'balanceModal'
+          ) {
+
+            closeBalanceModal();
+
+          }
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        'rejectModal'
+      )
+      .addEventListener(
+        'click',
+        event => {
+
+          if (
+            event.target.id ===
+            'rejectModal'
+          ) {
+
+            closeRejectModal();
+
+          }
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        'withdrawRejectModal'
+      )
+      .addEventListener(
+        'click',
+        event => {
+
+          if (
+            event.target.id ===
+            'withdrawRejectModal'
+          ) {
+
+            closeWithdrawRejectModal();
+
+          }
+
+        }
+      );
+
+
+    /* =====================================================
+       ESC KEY
+    ====================================================== */
+
+    document.addEventListener(
+      'keydown',
+      event => {
+
+        if (
+          event.key ===
+          'Escape'
+        ) {
+
+          closeBalanceModal();
+
+          closeRejectModal();
+
+          closeWithdrawRejectModal();
+
+        }
+
+      }
+    );
+
+
+    /* =====================================================
+       START ADMIN
+    ====================================================== */
+
+    document.addEventListener(
+      'DOMContentLoaded',
+      async () => {
+
+        updateTabs();
+
+
+        const authenticated =
+          await checkAuth();
+
+
+        if (!authenticated) {
+          return;
+        }
+
+
+        await loadUsers();
+
+      }
+    );
+
+  </script>
+
+</body>
+</html>
